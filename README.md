@@ -2,8 +2,14 @@
 
 Ứng dụng Photo Gallery API được xây dựng bằng Node.js, Express.js và MongoDB, tích hợp với Cloudinary để lưu trữ và quản lý hình ảnh.
 
+## 🔗 Links
+
+- **GitHub Repository**: [https://github.com/thientrile/photo_gallery.git](https://github.com/thientrile/photo_gallery.git)
+- **Postman Collection**: [Photo Gallery API Collection](https://www.postman.com/interstellar-resonance-246464/workspace/photo-gallery-api/request/25630734-c886feee-a61b-4a3b-b58f-2c2bd65d4bb6?action=share&source=copy-link&creator=25630734)
+
 ## 📋 Mục lục
 
+- [Links](#-links)
 - [Tính năng](#-tính-năng)
 - [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
 - [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
@@ -11,8 +17,10 @@
 - [Cấu hình](#-cấu-hình)
 - [Chạy ứng dụng](#-chạy-ứng-dụng)
 - [API Documentation](#-api-documentation)
+- [Postman Collection](#-postman-collection)
 - [Cấu trúc project](#-cấu-trúc-project)
 - [Database Schema](#-database-schema)
+- [Validation Rules](#-validation-rules)
 
 ## 🚀 Tính năng
 
@@ -48,7 +56,7 @@
 ### 1. Clone repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/thientrile/photo_gallery.git
 cd photo_gallery
 ```
 
@@ -131,11 +139,40 @@ npm start
 http://localhost:3002/api
 ```
 
+### Response Format
+Tất cả API responses đều có format thống nhất:
+
+**Success Response:**
+```json
+{
+  "status": "success",
+  "message": "Mô tả thành công",
+  "metadata": { /* dữ liệu trả về */ }
+}
+```
+
+**Error Response:**
+```json
+{
+  "status": "Error",
+  "code": 400,
+  "message": "Mô tả lỗi"
+}
+```
+
+### HTTP Status Codes
+- `200`: OK - Request thành công
+- `201`: Created - Tạo mới thành công  
+- `400`: Bad Request - Dữ liệu đầu vào không hợp lệ
+- `401`: Unauthorized - Chưa xác thực
+- `403`: Forbidden - Không có quyền truy cập
+- `404`: Not Found - Không tìm thấy resource
+- `500`: Internal Server Error - Lỗi server
+
 ### Authentication
-Hầu hết các API đều yêu cầu token xác thực. Token được gửi qua header:
-```
-Authorization: Bearer <your-jwt-token>
-```
+API sử dụng 2 loại token:
+- **Access Token**: Gửi qua header `Authorization: Bearer <access-token>`
+- **Refresh Token**: Gửi qua header `x-rtoken-id: <refresh-token>`
 
 ### Account Management
 
@@ -148,6 +185,26 @@ Content-Type: application/json
   "name": "Nguyen Van A",
   "email": "user@example.com",
   "password": "password123"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Register Account",
+  "metadata": {
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "name": "Nguyen Van A",
+      "email": "user@example.com",
+      "slug": "uid123456"
+    },
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+    }
+  }
 }
 ```
 
@@ -168,7 +225,12 @@ Content-Type: application/json
   "status": "success",
   "message": "Login Account",
   "metadata": {
-    "user": {...},
+    "user": {
+      "id": "507f1f77bcf86cd799439011",
+      "name": "Nguyen Van A",
+      "email": "user@example.com",
+      "slug": "uid123456"
+    },
     "tokens": {
       "accessToken": "eyJhbGciOiJIUzI1NiIs...",
       "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
@@ -180,13 +242,36 @@ Content-Type: application/json
 #### 3. Refresh Token
 ```http
 PATCH /api/account/refresh-token
-Authorization: Bearer <your-jwt-token>
+x-rtoken-id: <your-refresh-token>
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Refresh Token",
+  "metadata": {
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+    }
+  }
+}
 ```
 
 #### 4. Đăng xuất
 ```http
 DELETE /api/account/logout
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Logout Account",
+  "metadata": true
+}
 ```
 
 ### Image Management
@@ -194,38 +279,110 @@ Authorization: Bearer <your-jwt-token>
 #### 1. Upload hình ảnh
 ```http
 POST /api/images/upload
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
 Content-Type: multipart/form-data
 
-files: [file1, file2, ...] (tối đa 100 files)
-albumId: "album_object_id" (tùy chọn)
-caption: "Mô tả hình ảnh" (tùy chọn)
-tags: ["tag1", "tag2"] (tùy chọn)
-isPublic: true/false (tùy chọn)
+Form Data:
+- files: [file1, file2, ...] (tối đa 100 files)
+- albumId: 123456 (tùy chọn - ID số của album)
+- caption: "Mô tả hình ảnh" (tùy chọn)
+- tags: ["tag1", "tag2"] (tùy chọn)
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Image uploaded successfully",
+  "metadata": [
+    {
+      "id": 123456,
+      "secureUrl": "https://res.cloudinary.com/...",
+      "format": "jpg",
+      "width": 1920,
+      "height": 1080,
+      "bytes": 245760,
+      "tags": ["vacation", "beach"],
+      "caption": "Beautiful sunset",
+      "createdAt": "2025-08-03T10:30:00.000Z"
+    }
+  ]
+}
 ```
 
 #### 2. Lấy thông tin hình ảnh
 ```http
 GET /api/images/:imageId
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Image retrieved successfully",
+  "metadata": {
+    "id": 123456,
+    "secureUrl": "https://res.cloudinary.com/...",
+    "format": "jpg",
+    "width": 1920,
+    "height": 1080,
+    "bytes": 245760,
+    "tags": ["vacation", "beach"],
+    "caption": "Beautiful sunset",
+    "isPublic": false,
+    "createdAt": "2025-08-03T10:30:00.000Z"
+  }
+}
 ```
 
 #### 3. Lấy tất cả hình ảnh của user
 ```http
 GET /api/images
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "All images retrieved successfully",
+  "metadata": [
+    {
+      "id": 123456,
+      "secureUrl": "https://res.cloudinary.com/...",
+      "format": "jpg",
+      "width": 1920,
+      "height": 1080,
+      "caption": "Beautiful sunset",
+      "createdAt": "2025-08-03T10:30:00.000Z"
+    }
+  ]
+}
 ```
 
 #### 4. Lấy hình ảnh theo album
 ```http
 GET /api/images/album/:albumId
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
 ```
 
 #### 5. Xóa hình ảnh
 ```http
 DELETE /api/images/:imageId
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Image deleted successfully",
+  "metadata": {
+    "deleted": true,
+    "imageId": "507f1f77bcf86cd799439011"
+  }
+}
 ```
 
 ### Album Management
@@ -233,32 +390,79 @@ Authorization: Bearer <your-jwt-token>
 #### 1. Tạo album mới
 ```http
 POST /api/albums
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
 Content-Type: application/json
 
 {
-  "title": "Tên album",
-  "description": "Mô tả album",
-  "isPublic": false
+  "title": "Kỳ nghỉ hè 2025",
+  "description": "Những kỷ niệm đẹp từ kỳ nghỉ hè",
+  "cover_image": 123456
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Album created successfully",
+  "metadata": {
+    "id": 789012,
+    "title": "Kỳ nghỉ hè 2025",
+    "description": "Những kỷ niệm đẹp từ kỳ nghỉ hè",
+    "cover_image": "507f1f77bcf86cd799439011",
+    "isPublic": false
+  }
 }
 ```
 
 #### 2. Lấy tất cả album của user
 ```http
 GET /api/albums
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Albums retrieved successfully",
+  "metadata": [
+    {
+      "id": 789012,
+      "title": "Kỳ nghỉ hè 2025",
+      "description": "Những kỷ niệm đẹp từ kỳ nghỉ hè",
+      "cover_image": "507f1f77bcf86cd799439011",
+      "isPublic": false
+    }
+  ]
+}
 ```
 
 #### 3. Chỉnh sửa album
 ```http
 PATCH /api/albums/:albumId
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
 Content-Type: application/json
 
 {
-  "title": "Tên album mới",
-  "description": "Mô tả mới",
-  "isPublic": true
+  "title": "Kỳ nghỉ hè 2025 - Đã cập nhật",
+  "description": "Mô tả đã được cập nhật",
+  "cover_image": 654321
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Album updated successfully",
+  "metadata": {
+    "id": 789012,
+    "title": "Kỳ nghỉ hè 2025 - Đã cập nhật",
+    "description": "Mô tả đã được cập nhật",
+    "cover_image": "507f1f77bcf86cd799439012",
+    "isPublic": false
+  }
 }
 ```
 
@@ -267,27 +471,104 @@ Content-Type: application/json
 #### 1. Tạo tag mới
 ```http
 POST /api/tags
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
 Content-Type: application/json
 
 {
-  "name": "tên-tag"
+  "name": "vacation"
 }
 ```
 
-#### 2. Lấy tất cả tags
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Tag created successfully",
+  "metadata": {
+    "id": 123456,
+    "name": "vacation"
+  }
+}
+```
+
+#### 2. Lấy tất cả tags của user
 ```http
 GET /api/tags
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Tags retrieved successfully",
+  "metadata": [
+    {
+      "id": 123456,
+      "name": "vacation"
+    },
+    {
+      "id": 123457,
+      "name": "family"
+    },
+    {
+      "id": 123458,
+      "name": "nature"
+    }
+  ]
+}
 ```
 
 #### 3. Xóa tag
 ```http
 DELETE /api/tags/:tagId
-Authorization: Bearer <your-jwt-token>
+Authorization: Bearer <your-access-token>
 ```
 
-## 📁 Cấu trúc project
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Tag deleted successfully",
+  "metadata": true
+}
+```
+
+## � Postman Collection
+
+Để dễ dàng test và sử dụng API, bạn có thể import Postman Collection:
+
+**🔗 Link Collection**: [Photo Gallery API Collection](https://www.postman.com/interstellar-resonance-246464/workspace/photo-gallery-api/request/25630734-c886feee-a61b-4a3b-b58f-2c2bd65d4bb6?action=share&source=copy-link&creator=25630734)
+
+### Cách sử dụng Postman Collection:
+
+1. **Import Collection**:
+   - Mở Postman
+   - Click "Import" 
+   - Paste link collection ở trên
+   - Click "Continue" và "Import"
+
+2. **Setup Environment**:
+   - Tạo environment mới trong Postman
+   - Thêm các variables:
+     ```
+     baseUrl: http://localhost:3002/api
+     accessToken: (sẽ được set tự động sau khi login)
+     refreshToken: (sẽ được set tự động sau khi login)
+     ```
+
+3. **Authentication Flow**:
+   - Chạy **Register** hoặc **Login** request trước
+   - Tokens sẽ được lưu tự động vào environment variables
+   - Các request khác sẽ tự động sử dụng tokens này
+
+4. **Test Scenarios**:
+   - **Account**: Register → Login → Refresh Token → Logout
+   - **Images**: Login → Upload Images → Get Images → Delete Image
+   - **Albums**: Login → Create Album → Get Albums → Edit Album
+   - **Tags**: Login → Create Tag → Get Tags → Delete Tag
+
+## �📁 Cấu trúc project
 
 ```
 photo_gallery/
@@ -381,7 +662,32 @@ photo_gallery/
 }
 ```
 
-## 🛡️ Security
+## � Validation Rules
+
+### Account Registration
+- `name`: Bắt buộc, từ 3-30 ký tự
+- `email`: Bắt buộc, format email hợp lệ, unique
+- `password`: Bắt buộc, tối thiểu 6 ký tự
+
+### Account Login  
+- `username`: Bắt buộc, format email hợp lệ
+- `password`: Bắt buộc, tối thiểu 6 ký tự
+
+### Album Creation
+- `title`: Bắt buộc, từ 2-100 ký tự
+- `description`: Tùy chọn, tối đa 500 ký tự
+- `cover_image`: Tùy chọn, ID số của hình ảnh
+
+### Image Upload
+- `files`: Bắt buộc, tối đa 100 files
+- `albumId`: Tùy chọn, ID số của album
+- `caption`: Tùy chọn, tối đa 500 ký tự
+- `tags`: Tùy chọn, mảng string
+
+### Tag Creation
+- `name`: Bắt buộc, unique cho mỗi user
+
+## �🛡️ Security
 
 - **JWT Authentication**: Tất cả API đều được bảo vệ bằng JWT
 - **Input Validation**: Sử dụng Joi để validate input
