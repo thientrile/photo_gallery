@@ -4,14 +4,29 @@
 
 const express = require('express');
 const { asyncHandler } = require('../../utils/async/asyncHandler');
-const { uploadImage, getImage, getAllImage, getAllImageByAlbumId, DeleteImageById } = require('../../controller/Gallery/image.controller');
-const { updloadMemory } = require('../../utils/multer/multer');
+const { uploadImage, uploadImageOptimized, getImage, getAllImage, getAllImageByAlbumId, DeleteImageById, addToAlbum, removeFromAlbum, addMultipleToAlbum, removeMultipleFromAlbum } = require('../../controller/Gallery/image.controller');
+const { updloadMemory, hybridUpload } = require('../../utils/multer/multer');
 const { authenticate } = require('../../middleware/token');
 const r = express.Router();
-r.use(authenticate)
-r.post('/upload', updloadMemory.array('files', 100), asyncHandler(uploadImage))
-r.get('/:imageId',asyncHandler(getImage))
-r.delete('/:imageId',asyncHandler(DeleteImageById))
-r.get('/', asyncHandler(getAllImage));
+
+// Routes cần authenticate
+r.use(authenticate);
+
+// Upload và quản lý ảnh với optimized handling
+r.post('/upload', hybridUpload, asyncHandler(uploadImage));
+r.post('/upload/optimized', hybridUpload, asyncHandler(uploadImageOptimized)); // Enhanced upload với detailed stats
+r.post('/upload/standard', updloadMemory.array('files', 100), asyncHandler(uploadImage)); // Fallback route
+r.get('/:imageId', asyncHandler(getImage));
+r.delete('/:imageId', asyncHandler(DeleteImageById));
+r.get('/', asyncHandler(getAllImage)); // Hỗ trợ ?search=query
 r.get('/album/:albumId', asyncHandler(getAllImageByAlbumId));
+
+// Quản lý ảnh trong album
+r.post('/:imageId/add-to-album', asyncHandler(addToAlbum)); // Body: { "albumId": 123 }
+r.delete('/:imageId/remove-from-album', asyncHandler(removeFromAlbum));
+
+// Quản lý nhiều ảnh trong album
+r.post('/bulk/add-to-album', asyncHandler(addMultipleToAlbum)); // Body: { "imageIds": [1,2,3], "albumId": 123 }
+r.post('/bulk/remove-from-album', asyncHandler(removeMultipleFromAlbum)); // Body: { "imageIds": [1,2,3] }
+
 module.exports = r;

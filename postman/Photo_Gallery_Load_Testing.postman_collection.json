@@ -1,0 +1,813 @@
+{
+	"info": {
+		"_postman_id": "87654321-4321-4321-4321-210987654321",
+		"name": "Photo Gallery Load Testing",
+		"description": "Load testing collection for Photo Gallery API with stress tests and performance benchmarks.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "87654321"
+	},
+	"item": [
+		{
+			"name": "Authentication Load Test",
+			"item": [
+				{
+					"name": "Concurrent Login Test",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Generate unique user credentials for load testing",
+									"const userId = Math.floor(Math.random() * 10000);",
+									"pm.environment.set('load_test_email', `loadtest${userId}@example.com`);",
+									"pm.environment.set('load_test_name', `Load Test User ${userId}`);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Login performance under load\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test(\"Token received\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.metadata && responseJson.metadata.tokens) {",
+									"        pm.environment.set('load_access_token', responseJson.metadata.tokens.accessToken);",
+									"    }",
+									"});",
+									"",
+									"// Performance logging",
+									"console.log(`Login response time: ${pm.response.responseTime}ms`);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{test_user_email}}\",\n    \"password\": \"{{test_user_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/account/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"login"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Upload Performance Tests",
+			"item": [
+				{
+					"name": "Small File Upload Benchmark",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Small file upload performance\", function () {",
+									"    pm.response.to.have.status(201);",
+									"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+									"});",
+									"",
+									"pm.test(\"Upload successful\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.be.an('array');",
+									"    pm.expect(responseJson.metadata.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"// Log performance metrics",
+									"console.log(`Small file upload: ${pm.response.responseTime}ms`);",
+									"",
+									"// Store performance data",
+									"pm.globals.set('small_upload_time', pm.response.responseTime);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "small-test.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "performance,small,benchmark",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "Medium File Upload Benchmark",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Medium file upload performance\", function () {",
+									"    pm.response.to.have.status(201);",
+									"    pm.expect(pm.response.responseTime).to.be.below(15000);",
+									"});",
+									"",
+									"pm.test(\"Compression applied\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.uploadStats && responseJson.uploadStats.compressionRatio) {",
+									"        pm.expect(parseInt(responseJson.uploadStats.compressionRatio)).to.be.greaterThan(0);",
+									"        console.log(`Compression ratio: ${responseJson.uploadStats.compressionRatio}`);",
+									"    }",
+									"});",
+									"",
+									"console.log(`Medium file upload: ${pm.response.responseTime}ms`);",
+									"pm.globals.set('medium_upload_time', pm.response.responseTime);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "medium-test.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "performance,medium,compression",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/optimized",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"optimized"
+							]
+						}
+					}
+				},
+				{
+					"name": "Large File Upload Benchmark",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Large file upload completed\", function () {",
+									"    pm.response.to.have.status(201);",
+									"    pm.expect(pm.response.responseTime).to.be.below(60000); // 60 seconds max",
+									"});",
+									"",
+									"pm.test(\"Optimization statistics available\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.uploadStats) {",
+									"        pm.expect(responseJson.uploadStats).to.have.property('optimizationsUsed');",
+									"        pm.expect(responseJson.uploadStats.optimizationsUsed).to.be.an('array');",
+									"        console.log('Optimizations:', responseJson.uploadStats.optimizationsUsed);",
+									"    }",
+									"});",
+									"",
+									"console.log(`Large file upload: ${pm.response.responseTime / 1000} seconds`);",
+									"pm.globals.set('large_upload_time', pm.response.responseTime);",
+									"",
+									"// Performance comparison",
+									"const smallTime = pm.globals.get('small_upload_time');",
+									"const mediumTime = pm.globals.get('medium_upload_time');",
+									"const largeTime = pm.response.responseTime;",
+									"",
+									"console.log('=== Upload Performance Summary ===');",
+									"console.log(`Small file: ${smallTime}ms`);",
+									"console.log(`Medium file: ${mediumTime}ms`);",
+									"console.log(`Large file: ${largeTime}ms`);",
+									"console.log(`Efficiency ratio: ${(largeTime / smallTime).toFixed(2)}x`);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "large-test.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "performance,large,optimization",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/optimized",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"optimized"
+							]
+						}
+					}
+				},
+				{
+					"name": "Batch Upload Load Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Batch upload under load\", function () {",
+									"    pm.response.to.have.status(201);",
+									"    pm.expect(pm.response.responseTime).to.be.below(30000);",
+									"});",
+									"",
+									"pm.test(\"All files processed\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.be.an('array');",
+									"    pm.expect(responseJson.metadata.length).to.equal(5); // 5 files uploaded",
+									"});",
+									"",
+									"console.log(`Batch upload (5 files): ${pm.response.responseTime}ms`);",
+									"console.log(`Average per file: ${(pm.response.responseTime / 5).toFixed(0)}ms`);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "batch1.jpg"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"src": "batch2.jpg"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"src": "batch3.jpg"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"src": "batch4.jpg"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"src": "batch5.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "batch,load test,performance",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/batch",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"batch"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Search Performance Tests",
+			"item": [
+				{
+					"name": "Simple Search Benchmark",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Search response time acceptable\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.responseTime).to.be.below(500);",
+									"});",
+									"",
+									"pm.test(\"Search results structure\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"    pm.expect(responseJson.metadata).to.have.property('pagination');",
+									"});",
+									"",
+									"console.log(`Simple search: ${pm.response.responseTime}ms`);",
+									"pm.globals.set('simple_search_time', pm.response.responseTime);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?search=test&page=1&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "test"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Complex Search Benchmark",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Complex search performance\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+									"});",
+									"",
+									"console.log(`Complex search: ${pm.response.responseTime}ms`);",
+									"pm.globals.set('complex_search_time', pm.response.responseTime);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?search=mùa hè 2025&page=1&limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "mùa hè 2025"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Large Result Set Search",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Large result set search\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"pm.test(\"Pagination working correctly\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata.pagination).to.have.property('totalPages');",
+									"    pm.expect(responseJson.metadata.pagination).to.have.property('currentPage');",
+									"    pm.expect(responseJson.metadata.pagination.currentPage).to.equal(1);",
+									"});",
+									"",
+									"console.log(`Large result search: ${pm.response.responseTime}ms`);",
+									"const responseJson = pm.response.json();",
+									"console.log(`Total results: ${responseJson.metadata.pagination.totalItems}`);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?page=1&limit=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Stress Tests",
+			"item": [
+				{
+					"name": "Concurrent Request Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Server handles concurrent requests\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response time under stress\", function () {",
+									"    // Allow higher response time under stress",
+									"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+									"});",
+									"",
+									"console.log(`Concurrent request: ${pm.response.responseTime}ms`);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?page=1&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Memory Pressure Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Memory pressure handling\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Large upload under pressure\", function () {",
+									"    // Allow more time under memory pressure",
+									"    pm.expect(pm.response.responseTime).to.be.below(90000);",
+									"});",
+									"",
+									"const responseJson = pm.response.json();",
+									"if (responseJson.uploadStats) {",
+									"    console.log('Memory pressure stats:', responseJson.uploadStats);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "stress-test-large.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "stress test,memory pressure,performance",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/optimized",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"optimized"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Performance Report",
+			"item": [
+				{
+					"name": "Generate Performance Summary",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Generate comprehensive performance report",
+									"const smallUpload = pm.globals.get('small_upload_time');",
+									"const mediumUpload = pm.globals.get('medium_upload_time');",
+									"const largeUpload = pm.globals.get('large_upload_time');",
+									"const simpleSearch = pm.globals.get('simple_search_time');",
+									"const complexSearch = pm.globals.get('complex_search_time');",
+									"",
+									"console.log('\\n=== PHOTO GALLERY API PERFORMANCE REPORT ===');",
+									"console.log('Generated:', new Date().toISOString());",
+									"console.log('\\n--- Upload Performance ---');",
+									"console.log(`Small File Upload: ${smallUpload}ms`);",
+									"console.log(`Medium File Upload: ${mediumUpload}ms`);",
+									"console.log(`Large File Upload: ${largeUpload}ms`);",
+									"console.log(`Upload Scaling Ratio: ${(largeUpload / smallUpload).toFixed(2)}x`);",
+									"console.log('\\n--- Search Performance ---');",
+									"console.log(`Simple Search: ${simpleSearch}ms`);",
+									"console.log(`Complex Search: ${complexSearch}ms`);",
+									"console.log('\\n--- Performance Grades ---');",
+									"",
+									"// Grading system",
+									"function getGrade(time, excellent, good, fair) {",
+									"    if (time <= excellent) return 'A+ (Excellent)';",
+									"    if (time <= good) return 'A (Good)';",
+									"    if (time <= fair) return 'B (Fair)';",
+									"    return 'C (Needs Improvement)';",
+									"}",
+									"",
+									"console.log(`Small Upload Grade: ${getGrade(smallUpload, 1000, 3000, 5000)}`);",
+									"console.log(`Large Upload Grade: ${getGrade(largeUpload, 10000, 30000, 60000)}`);",
+									"console.log(`Search Grade: ${getGrade(simpleSearch, 200, 500, 1000)}`);",
+									"",
+									"// Overall system health",
+									"const avgPerformance = (smallUpload + mediumUpload + largeUpload + simpleSearch + complexSearch) / 5;",
+									"console.log('\\n--- Overall System Health ---');",
+									"console.log(`Average Response Time: ${avgPerformance.toFixed(0)}ms`);",
+									"console.log(`System Health: ${getGrade(avgPerformance, 3000, 8000, 15000)}`);",
+									"console.log('\\n=== END REPORT ===\\n');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?page=1&limit=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "1"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Load test pre-request setup",
+					"console.log('Starting performance test:', pm.info.requestName);",
+					"pm.globals.set('test_start_time', Date.now());"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global performance monitoring",
+					"const startTime = pm.globals.get('test_start_time');",
+					"const totalTime = Date.now() - startTime;",
+					"",
+					"pm.test('Server is responsive', function () {",
+					"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+					"});",
+					"",
+					"// Memory usage warning",
+					"if (pm.response.responseTime > 30000) {",
+					"    console.warn('WARNING: Response time exceeded 30 seconds');",
+					"}",
+					"",
+					"// Error rate monitoring",
+					"if (pm.response.code >= 400) {",
+					"    console.error('ERROR: Request failed with status', pm.response.code);",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "load_test_iterations",
+			"value": "10",
+			"type": "string"
+		},
+		{
+			"key": "concurrent_users",
+			"value": "5",
+			"type": "string"
+		},
+		{
+			"key": "stress_duration",
+			"value": "300",
+			"type": "string"
+		}
+	]
+}

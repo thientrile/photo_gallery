@@ -1,53 +1,493 @@
-# Photo Gallery API
+# 📸 Photo Gallery API
 
-Ứng dụng Photo Gallery API được xây dựng bằng Node.js, Express.js và MongoDB, tích hợp với Cloudinary để lưu trữ và quản lý hình ảnh.
+> Một API hoàn chỉnh cho ứng dụng quản lý thư viện ảnh với các tính năng nâng cao
 
-## 🔗 Links
+[![Node.js](https://img.shields.io/badge/Node.js-20.0.0+-green.svg)](https://nodejs.org)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4.4+-brightgreen.svg)](https://mongodb.com)
+[![Express](https://img.shields.io/badge/Express-4.x-blue.svg)](https://expressjs.com)
+[![Cloudinary](https://img.shields.io/badge/Cloudinary-Integrated-orange.svg)](https://cloudinary.com)
+[![JWT](https://img.shields.io/badge/JWT-Authentication-red.svg)](https://jwt.io)
 
-- **GitHub Repository**: [https://github.com/thientrile/photo_gallery.git](https://github.com/thientrile/photo_gallery.git)
-- **Postman Collection**: [Photo Gallery API Collection](https://www.postman.com/interstellar-resonance-246464/workspace/photo-gallery-api/request/25630734-c886feee-a61b-4a3b-b58f-2c2bd65d4bb6?action=share&source=copy-link&creator=25630734)
+## 🌟 **Tổng Quan**
 
-## 📋 Mục lục
+Photo Gallery API là một backend service mạnh mẽ được xây dựng để quản lý thư viện ảnh trực tuyến. Với kiến trúc RESTful API hiện đại, hệ thống hỗ trợ đầy đủ các tính năng từ quản lý người dùng, upload ảnh, tổ chức album cho đến tìm kiếm thông minh.
 
-- [Links](#-links)
-- [Tính năng](#-tính-năng)
-- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
-- [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
-- [Cài đặt](#-cài-đặt)
-- [Cấu hình](#-cấu-hình)
-- [Chạy ứng dụng](#-chạy-ứng-dụng)
-- [API Documentation](#-api-documentation)
-- [Postman Collection](#-postman-collection)
-- [Cấu trúc project](#-cấu-trúc-project)
-- [Database Schema](#-database-schema)
-- [Validation Rules](#-validation-rules)
+### 🎯 **Tính Năng Chính**
 
-## 🚀 Tính năng
+#### 👤 **Quản Lý Người Dùng**
+- ✅ Đăng ký tài khoản với validation email
+- ✅ Đăng nhập/Đăng xuất an toàn 
+- ✅ JWT Authentication với Refresh Token
+- ✅ Quản lý phiên đăng nhập multiple device
 
-- **Quản lý tài khoản**: Đăng ký, đăng nhập, đăng xuất, refresh token
-- **Quản lý hình ảnh**: Upload, xem, xóa hình ảnh với Cloudinary
-- **Quản lý album**: Tạo, chỉnh sửa, xem album hình ảnh
-- **Quản lý thẻ (tags)**: Tạo, xóa, xem các thẻ gắn với hình ảnh
-- **Xác thực JWT**: Bảo mật API với JSON Web Token
-- **Upload multiple files**: Hỗ trợ upload nhiều file cùng lúc
-- **Responsive metadata**: Lưu trữ thông tin chi tiết về hình ảnh (kích thước, định dạng, dung lượng)
+#### 🖼️ **Quản Lý Hình Ảnh**
+- ✅ **Upload nhiều ảnh** cùng lúc (bulk upload)
+- ✅ **Tích hợp Cloudinary** - CDN global tốc độ cao
+- ✅ **Metadata tự động** - kích thước, format, dung lượng
+- ✅ **Tìm kiếm thông minh** theo tags và tên album
+- ✅ **Xóa an toàn** - xóa cả trên cloud và database
 
-## 🛠 Công nghệ sử dụng
+#### 📚 **Quản Lý Album**
+- ✅ Tạo/Sửa/Xóa album với validation
+- ✅ **Thêm/Xóa ảnh vào album** (single & bulk operations)
+- ✅ Ảnh bìa album tự động
+- ✅ Quyền riêng tư (public/private)
 
-- **Backend**: Node.js, Express.js
-- **Database**: MongoDB với Mongoose ODM
-- **Cloud Storage**: Cloudinary
-- **Authentication**: JSON Web Token (JWT)
-- **File Upload**: Multer
-- **Validation**: Joi
-- **Security**: Helmet, CORS
-- **Logging**: Morgan
-- **Process Management**: Docker, Docker Compose
+#### 🏷️ **Hệ Thống Tags**
+- ✅ Gắn tags cho ảnh khi upload
+- ✅ Tìm kiếm theo tags (case-insensitive)
+- ✅ Quản lý tags động
 
-## 📋 Yêu cầu hệ thống
+#### � **Tìm Kiếm Nâng Cao**
+- ✅ **Tìm kiếm thống nhất** trong một endpoint
+- ✅ Tìm theo **tags** và **tên album** cùng lúc
+- ✅ Hỗ trợ **tiếng Việt** với diacritics
+- ✅ **Partial matching** và **case-insensitive**
 
-- Node.js >= 20.0.0
-- MongoDB >= 4.4
+## 🚀 **Quick Start**
+
+### 1️⃣ **Clone & Install**
+```bash
+git clone https://github.com/thientrile/photo_gallery.git
+cd photo_gallery
+npm install
+```
+
+### 2️⃣ **Environment Setup**
+```bash
+# Copy và cấu hình file môi trường
+cp .env.example .env
+```
+
+Cập nhật file `.env`:
+```env
+# Application
+APP_NAME=photo_gallery
+VERSION=1.0.0
+PORT=3002
+HOST=localhost
+NODE_ENV=development
+
+# Database
+LOCAL_DB_CONNECTION=mongodb
+LOCAL_DB_HOST=localhost:27017
+LOCAL_DB_USER=your_username
+LOCAL_DB_PASSWORD=your_password
+
+# Cloudinary
+CLOUDINARY_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+### 3️⃣ **Start Development**
+```bash
+# Development mode với auto-reload
+npm run dev
+
+# Production mode
+npm start
+
+# Using Docker
+docker-compose up -d
+```
+
+### 4️⃣ **Verify Installation**
+```bash
+curl http://localhost:3002/health
+# Expected: {"status": "OK", "timestamp": "..."}
+```
+
+## 📋 **API Documentation**
+
+### 🔐 **Authentication Endpoints**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/account/register` | Đăng ký tài khoản mới | ❌ |
+| `POST` | `/api/account/login` | Đăng nhập | ❌ |
+| `POST` | `/api/account/logout` | Đăng xuất | ✅ |
+| `POST` | `/api/account/refresh` | Làm mới token | ✅ |
+
+### 🖼️ **Image Management**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/gallery/image/` | Lấy tất cả ảnh + tìm kiếm | ✅ |
+| `GET` | `/api/gallery/image/:id` | Chi tiết ảnh | ✅ |
+| `POST` | `/api/gallery/image/upload` | Upload ảnh (nhiều files) | ✅ |
+| `DELETE` | `/api/gallery/image/:id` | Xóa ảnh | ✅ |
+
+#### 🔍 **Tìm Kiếm Ảnh**
+```bash
+# Lấy tất cả ảnh
+GET /api/gallery/image/
+
+# Tìm kiếm thông minh
+GET /api/gallery/image/?search=mùa hè 2025
+GET /api/gallery/image/?search=vacation
+GET /api/gallery/image/?search=biển
+```
+
+### 📚 **Album Management**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/gallery/album/` | Lấy tất cả album | ✅ |
+| `GET` | `/api/gallery/album/:id` | Chi tiết album | ✅ |
+| `POST` | `/api/gallery/album/` | Tạo album mới | ✅ |
+| `PUT` | `/api/gallery/album/:id` | Cập nhật album | ✅ |
+| `DELETE` | `/api/gallery/album/:id` | Xóa album | ✅ |
+
+#### 🔄 **Album Operations**
+```bash
+# Thêm ảnh vào album (đơn lẻ)
+POST /api/gallery/image/:imageId/add-to-album
+Body: { "albumId": 123456 }
+
+# Thêm nhiều ảnh vào album
+POST /api/gallery/image/bulk/add-to-album  
+Body: { "imageIds": [123, 456], "albumId": 789 }
+
+# Xóa ảnh khỏi album (đơn lẻ)
+DELETE /api/gallery/image/:imageId/remove-from-album
+
+# Xóa nhiều ảnh khỏi album
+POST /api/gallery/image/bulk/remove-from-album
+Body: { "imageIds": [123, 456] }
+```
+
+### 🏷️ **Tag Management**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/gallery/tag/` | Lấy tất cả tags | ✅ |
+| `POST` | `/api/gallery/tag/` | Tạo tag mới | ✅ |
+| `DELETE` | `/api/gallery/tag/:id` | Xóa tag | ✅ |
+
+## 💻 **Frontend Integration**
+
+### **JavaScript/React Examples**
+
+#### Upload và Tìm Kiếm
+```javascript
+// Upload multiple images
+const uploadImages = async (files, albumId = null, tags = []) => {
+  const formData = new FormData();
+  files.forEach(file => formData.append('files', file));
+  
+  formData.append('albumId', albumId);
+  formData.append('tags', JSON.stringify(tags));
+  formData.append('caption', 'My awesome photos');
+
+  const response = await fetch('/api/gallery/image/upload', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  });
+  
+  return await response.json();
+};
+
+// Smart search
+const searchImages = async (query) => {
+  const response = await fetch(`/api/gallery/image/?search=${encodeURIComponent(query)}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  const data = await response.json();
+  return data.metadata.images;
+};
+
+// Bulk album operations
+const addImagesToAlbum = async (imageIds, albumId) => {
+  const response = await fetch('/api/gallery/image/bulk/add-to-album', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ imageIds, albumId })
+  });
+  
+  return await response.json();
+};
+```
+
+#### React Hook Example
+```jsx
+import { useState, useEffect } from 'react';
+
+const usePhotoGallery = (searchQuery = '') => {
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [albums, setAlbums] = useState([]);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      setLoading(true);
+      try {
+        const params = searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : '';
+        const response = await fetch(`/api/gallery/image/${params}`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await response.json();
+        setImages(data.metadata.images);
+      } catch (error) {
+        console.error('Fetch images error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchImages();
+  }, [searchQuery]);
+
+  const addToAlbum = async (imageIds, albumId) => {
+    const response = await fetch('/api/gallery/image/bulk/add-to-album', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ imageIds, albumId })
+    });
+    return await response.json();
+  };
+
+  return { images, loading, albums, addToAlbum };
+};
+```
+
+## 🏗️ **Kiến Trúc Hệ Thống**
+
+### **Project Structure**
+```
+photo_gallery/
+├── 📁 src/
+│   ├── 📁 controller/          # API Controllers
+│   │   ├── 📁 Account/         # User authentication
+│   │   └── 📁 Gallery/         # Image, Album, Tag controllers
+│   ├── 📁 service/            # Business logic
+│   ├── 📁 repository/         # Database access layer
+│   ├── 📁 model/              # MongoDB schemas
+│   ├── 📁 middleware/         # JWT, validation middleware
+│   ├── 📁 router/             # Route definitions
+│   ├── 📁 dto/                # Data Transfer Objects
+│   └── 📁 utils/              # Utilities
+│       ├── 📁 cloudinary/     # Cloudinary integration
+│       ├── 📁 multer/         # File upload handling
+│       ├── 📁 jsonwebtoken/   # JWT utilities
+│       └── 📁 validation/     # Joi validation
+├── 📄 server.js               # Entry point
+├── � config.js               # Configuration
+├── 📄 docker-compose.yaml     # Docker setup
+└── 📄 package.json
+```
+
+### **Database Schema**
+
+#### **Users Collection**
+```javascript
+{
+  _id: ObjectId,
+  usr_id: Number,           // Unique user ID
+  usr_email: String,        // User email (unique)
+  usr_password: String,     // Hashed password
+  usr_name: String,         // Display name
+  usr_isActive: Boolean,    // Account status
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### **Images Collection**
+```javascript
+{
+  _id: ObjectId,
+  img_id: Number,           // Unique image ID
+  img_uploaderId: ObjectId, // Reference to User
+  img_albumId: ObjectId,    // Reference to Album (nullable)
+  img_url: String,          // Cloudinary URL
+  img_secureUrl: String,    // HTTPS URL
+  img_publicId: String,     // Cloudinary public ID
+  img_format: String,       // jpg, png, gif, etc.
+  img_width: Number,        // Image width in pixels
+  img_height: Number,       // Image height in pixels
+  img_bytes: Number,        // File size in bytes
+  img_tags: [String],       // Array of tags
+  img_caption: String,      // Image description
+  img_isPublic: Boolean,    // Public/Private
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### **Albums Collection**
+```javascript
+{
+  _id: ObjectId,
+  alb_id: Number,           // Unique album ID
+  alb_title: String,        // Album title
+  alb_description: String,  // Album description
+  alb_userId: ObjectId,     // Reference to User
+  alb_cover_image: ObjectId, // Reference to Image (nullable)
+  alb_isPublic: Boolean,    // Public/Private
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+## 🛡️ **Security Features**
+
+### **Authentication & Authorization**
+- ✅ **JWT Access Token** (15 phút expiry)
+- ✅ **Refresh Token** (7 ngày expiry) 
+- ✅ **Blacklist Token** khi logout
+- ✅ **Multiple Device Support**
+- ✅ **Rate Limiting** cho sensitive endpoints
+
+### **Data Validation**
+- ✅ **Joi Schema Validation** cho tất cả inputs
+- ✅ **File Type Validation** (chỉ image files)
+- ✅ **File Size Limits** (configurable)
+- ✅ **Sanitization** để prevent injection
+
+### **Error Handling**
+- ✅ **Centralized Error Handler**
+- ✅ **Meaningful Error Messages** (tiếng Việt)
+- ✅ **Error Logging** với stack trace
+- ✅ **API Response Consistency**
+
+## 🚀 **Deployment**
+
+### **Using Docker**
+```bash
+# Build và start services
+docker-compose up -d
+
+# Logs
+docker-compose logs -f app
+
+# Stop services  
+docker-compose down
+```
+
+### **Environment Variables**
+```env
+# Production Configuration
+NODE_ENV=production
+PORT=3002
+
+# Database
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/photo_gallery
+
+# Cloudinary (Production)
+CLOUDINARY_NAME=your-production-cloud
+CLOUDINARY_API_KEY=your-production-key
+CLOUDINARY_API_SECRET=your-production-secret
+
+# JWT Secrets
+JWT_ACCESS_SECRET=your-super-secret-access-key
+JWT_REFRESH_SECRET=your-super-secret-refresh-key
+```
+
+### **Performance Optimization**
+- ✅ **MongoDB Indexing** cho search queries
+- ✅ **Cloudinary Transformations** cho responsive images
+- ✅ **Compression** middleware
+- ✅ **CORS** configuration
+- ✅ **Memory Usage** optimization
+
+## 📊 **API Testing**
+
+### **Postman Collection**
+Import collection: [Photo Gallery API Collection](https://www.postman.com/interstellar-resonance-246464/workspace/photo-gallery-api/request/25630734-c886feee-a61b-4a3b-b58f-2c2bd65d4bb6?action=share&source=copy-link&creator=25630734)
+
+### **Manual Testing với cURL**
+
+```bash
+# 1. Register new user
+curl -X POST http://localhost:3002/api/account/register \
+  -H "Content-Type: application/json" \
+  -d '{"usr_email":"test@example.com","usr_password":"123456","usr_name":"Test User"}'
+
+# 2. Login
+curl -X POST http://localhost:3002/api/account/login \
+  -H "Content-Type: application/json" \
+  -d '{"usr_email":"test@example.com","usr_password":"123456"}'
+
+# 3. Upload images (replace YOUR_TOKEN)
+curl -X POST http://localhost:3002/api/gallery/image/upload \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "files=@image1.jpg" \
+  -F "files=@image2.jpg" \
+  -F "tags=[\"vacation\",\"beach\"]" \
+  -F "caption=Summer vacation photos"
+
+# 4. Search images
+curl -X GET "http://localhost:3002/api/gallery/image/?search=vacation" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 5. Create album
+curl -X POST http://localhost:3002/api/gallery/album/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"alb_title":"Summer 2025","alb_description":"Best summer memories"}'
+
+# 6. Add images to album
+curl -X POST http://localhost:3002/api/gallery/image/bulk/add-to-album \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"imageIds":[123,456],"albumId":789}'
+```
+
+## 🤝 **Contributing**
+
+### **Development Setup**
+```bash
+# Fork repository và clone
+git clone https://github.com/YOUR_USERNAME/photo_gallery.git
+cd photo_gallery
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Run tests (nếu có)
+npm test
+```
+
+### **Code Standards**
+- ✅ ESLint configuration
+- ✅ Consistent naming conventions
+- ✅ Comprehensive error handling
+- ✅ Vietnamese comments cho business logic
+
+## 📄 **License**
+
+MIT License - xem [LICENSE](LICENSE) file để biết thêm chi tiết.
+
+## 🙋 **Support**
+
+### **Documentation**
+- 📖 [Search API Guide](SEARCH_API_GUIDE.md)
+- 📖 [Album Management API](ALBUM_MANAGEMENT_API.md)
+- 📖 [Postman Collection](https://www.postman.com/interstellar-resonance-246464/workspace/photo-gallery-api/)
+
+### **Contact**
+- � Email: thientrile@example.com
+- 🐙 GitHub: [@thientrile](https://github.com/thientrile)
+- 💼 LinkedIn: [Trí Lê](https://linkedin.com/in/thientrile)
+
+---
+
+<div align="center">
+  <p>Made with ❤️ by <a href="https://github.com/thientrile">Trí Lê</a></p>
+  <p>⭐ Star this repo if you like it!</p>
+</div>
 - Docker & Docker Compose (tùy chọn)
 - Tài khoản Cloudinary
 

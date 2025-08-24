@@ -1,0 +1,1543 @@
+{
+	"info": {
+		"_postman_id": "12345678-1234-1234-1234-123456789012",
+		"name": "Photo Gallery API",
+		"description": "Comprehensive API testing collection for Photo Gallery application with authentication, image management, album operations, and search functionality.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has user data\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson).to.have.property('metadata');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"{{test_user_name}}\",\n    \"email\": \"{{test_user_email}}\",\n    \"password\": \"{{test_user_password}}\",\n    \"confirmPassword\": \"{{test_user_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/account/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"register"
+							]
+						}
+					}
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has tokens\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('tokens');",
+									"    pm.expect(responseJson.metadata.tokens).to.have.property('accessToken');",
+									"    pm.expect(responseJson.metadata.tokens).to.have.property('refreshToken');",
+									"    ",
+									"    // Save tokens to environment",
+									"    pm.environment.set('access_token', responseJson.metadata.tokens.accessToken);",
+									"    pm.environment.set('refresh_token', responseJson.metadata.tokens.refreshToken);",
+									"    pm.environment.set('user_id', responseJson.metadata.user._id);",
+									"});",
+									"",
+									"pm.test(\"Response time is less than 1000ms\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{test_user_email}}\",\n    \"password\": \"{{test_user_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/account/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"login"
+							]
+						}
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has new access token\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('tokens');",
+									"    pm.expect(responseJson.metadata.tokens).to.have.property('accessToken');",
+									"    ",
+									"    // Update access token",
+									"    pm.environment.set('access_token', responseJson.metadata.tokens.accessToken);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/account/refresh-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"refresh-token"
+							]
+						}
+					}
+				},
+				{
+					"name": "Logout User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"User logged out successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/account/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account",
+								"logout"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Tag Management",
+			"item": [
+				{
+					"name": "Get All Tags",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/tag/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"tag",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Tag - Vacation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Tag created successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('_id');",
+									"    pm.expect(responseJson.metadata).to.have.property('tag_name');",
+									"    pm.environment.set('tag_vacation_id', responseJson.metadata._id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tag_name\": \"vacation\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/tag/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"tag",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Tag - Mùa Hè 2025",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Vietnamese tag created successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('_id');",
+									"    pm.expect(responseJson.metadata.tag_name).to.equal('mùa hè 2025');",
+									"    pm.environment.set('tag_summer_id', responseJson.metadata._id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tag_name\": \"mùa hè 2025\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/tag/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"tag",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Tag - Beach",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Tag created successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('_id');",
+									"    pm.environment.set('tag_beach_id', responseJson.metadata._id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tag_name\": \"beach\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/tag/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"tag",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Tag",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Tag deleted successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/tag/{{tag_beach_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"tag",
+								"{{tag_beach_id}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Album Management",
+			"item": [
+				{
+					"name": "Create Album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Album created successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('_id');",
+									"    pm.expect(responseJson.metadata).to.have.property('album_name');",
+									"    pm.expect(responseJson.metadata).to.have.property('description');",
+									"    pm.environment.set('test_album_id', responseJson.metadata._id);",
+									"});",
+									"",
+									"pm.test(\"Album has correct name\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata.album_name).to.equal('Kỳ Nghỉ Hè 2025');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"album_name\": \"Kỳ Nghỉ Hè 2025\",\n    \"description\": \"Album chứa những hình ảnh đẹp trong kỳ nghỉ hè năm 2025\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All Albums",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains albums array\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Response time is acceptable\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Album By ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Album details are correct\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('_id');",
+									"    pm.expect(responseJson.metadata).to.have.property('album_name');",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/{{test_album_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								"{{test_album_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Album updated successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata.album_name).to.equal('Kỳ Nghỉ Hè 2025 - Cập Nhật');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"album_name\": \"Kỳ Nghỉ Hè 2025 - Cập Nhật\",\n    \"description\": \"Album đã được cập nhật với thông tin mới\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/{{test_album_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								"{{test_album_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Images to Album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Images added to album successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"imageIds\": [\"{{test_image_id}}\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/{{test_album_id}}/images",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								"{{test_album_id}}",
+								"images"
+							]
+						}
+					}
+				},
+				{
+					"name": "Remove Image from Album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Image removed from album successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/{{test_album_id}}/images/{{test_image_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								"{{test_album_id}}",
+								"images",
+								"{{test_image_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Album deleted successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/{{test_album_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								"{{test_album_id}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Image Management",
+			"item": [
+				{
+					"name": "Upload Single Image",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Image uploaded successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.be.an('array');",
+									"    pm.expect(responseJson.metadata.length).to.be.greaterThan(0);",
+									"    pm.environment.set('test_image_id', responseJson.metadata[0]._id);",
+									"});",
+									"",
+									"pm.test(\"Image has Cloudinary URL\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata[0]).to.have.property('image_url');",
+									"    pm.expect(responseJson.metadata[0].image_url).to.include('cloudinary');",
+									"});",
+									"",
+									"pm.test(\"Upload time is reasonable\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(10000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "test-image.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "vacation,mùa hè 2025",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "Upload Optimized Image",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Optimized upload successful\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.be.an('array');",
+									"    if (responseJson.uploadStats) {",
+									"        pm.expect(responseJson.uploadStats).to.have.property('optimizationsUsed');",
+									"        console.log('Upload Stats:', responseJson.uploadStats);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"Performance metrics available\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.uploadStats) {",
+									"        pm.expect(responseJson.uploadStats).to.have.property('uploadTime');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "large-image.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "performance test,large file",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/optimized",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"optimized"
+							]
+						}
+					}
+				},
+				{
+					"name": "Batch Upload Images",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Multiple images uploaded\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.be.an('array');",
+									"    console.log(`Uploaded ${responseJson.metadata.length} images`);",
+									"});",
+									"",
+									"pm.test(\"Batch upload performance\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(30000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "image1.jpg"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"src": "image2.jpg"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"src": "image3.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "batch upload,test",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/batch",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"batch"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All Images",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Images list retrieved\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"    pm.expect(responseJson.metadata.images).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Pagination info present\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('pagination');",
+									"    pm.expect(responseJson.metadata.pagination).to.have.property('currentPage');",
+									"    pm.expect(responseJson.metadata.pagination).to.have.property('totalPages');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?page=1&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Images by Tag",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Search results returned\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"    console.log(`Found ${responseJson.metadata.images.length} images matching 'mùa hè'`);",
+									"});",
+									"",
+									"pm.test(\"Search performance\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?search=mùa hè&page=1&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "mùa hè"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Images by Album Name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Album search results returned\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"    console.log(`Found ${responseJson.metadata.images.length} images in albums matching 'Kỳ Nghỉ'`);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?search=Kỳ Nghỉ&page=1&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "Kỳ Nghỉ"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Mixed Query",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Mixed search results returned\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"    console.log(`Mixed search found ${responseJson.metadata.images.length} images matching '2025'`);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?search=2025&page=1&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "2025"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Image",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Image deleted successfully\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/{{test_image_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"{{test_image_id}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Performance Tests",
+			"item": [
+				{
+					"name": "Concurrent Upload Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Concurrent upload performance\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(15000);",
+									"    console.log(`Concurrent upload took: ${pm.response.responseTime}ms`);",
+									"});",
+									"",
+									"pm.test(\"Upload statistics available\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    if (responseJson.uploadStats) {",
+									"        console.log('Upload Stats:', JSON.stringify(responseJson.uploadStats, null, 2));",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "performance-test.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "performance,concurrent,test",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/optimized",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"optimized"
+							]
+						}
+					}
+				},
+				{
+					"name": "Large File Upload Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Large file upload successful\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.be.an('array');",
+									"    if (responseJson.uploadStats) {",
+									"        pm.expect(responseJson.uploadStats).to.have.property('originalSize');",
+									"        pm.expect(responseJson.uploadStats).to.have.property('compressedSize');",
+									"        console.log('Compression saved:', responseJson.uploadStats.compressionRatio);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"Large file performance acceptable\", function () {",
+									"    // Allow up to 60 seconds for very large files",
+									"    pm.expect(pm.response.responseTime).to.be.below(60000);",
+									"    console.log(`Large file upload took: ${pm.response.responseTime / 1000} seconds`);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "images",
+									"type": "file",
+									"src": "very-large-file.jpg"
+								},
+								{
+									"key": "tags",
+									"value": "large file,performance test,compression",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/optimized",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"optimized"
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Performance Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Search performance is good\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+									"    console.log(`Search completed in: ${pm.response.responseTime}ms`);",
+									"});",
+									"",
+									"pm.test(\"Search results structure correct\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"    pm.expect(responseJson.metadata).to.have.property('pagination');",
+									"    console.log(`Found ${responseJson.metadata.images.length} results`);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?search=performance&page=1&limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "performance"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"console.log('Running request:', pm.info.requestName);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"pm.test('Response time is reasonable', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(30000);",
+					"});",
+					"",
+					"pm.test('Response has correct content type', function () {",
+					"    if (pm.response.headers.get('Content-Type')) {",
+					"        pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+					"    }",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3002",
+			"type": "string"
+		},
+		{
+			"key": "test_user_name",
+			"value": "Test User",
+			"type": "string"
+		},
+		{
+			"key": "test_user_email",
+			"value": "testuser@example.com",
+			"type": "string"
+		},
+		{
+			"key": "test_user_password",
+			"value": "password123",
+			"type": "string"
+		}
+	]
+}
