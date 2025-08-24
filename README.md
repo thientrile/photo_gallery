@@ -25,11 +25,13 @@ Photo Gallery API là một backend service mạnh mẽ được xây dựng đ�
 - ✅ **Tích hợp Cloudinary** - CDN global tốc độ cao
 - ✅ **Metadata tự động** - kích thước, format, dung lượng
 - ✅ **Tìm kiếm thông minh** theo tags và tên album
+- ✅ **Phân trang nâng cao** - pagination với metadata chi tiết
 - ✅ **Xóa an toàn** - xóa cả trên cloud và database
 
 #### 📚 **Quản Lý Album**
 - ✅ Tạo/Sửa/Xóa album với validation
 - ✅ **Thêm/Xóa ảnh vào album** (single & bulk operations)
+- ✅ **Phân trang cho danh sách album** với metadata hoàn chỉnh
 - ✅ Ảnh bìa album tự động
 - ✅ Quyền riêng tư (public/private)
 
@@ -113,7 +115,7 @@ curl http://localhost:3002/health
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `GET` | `/api/gallery/image/` | Lấy tất cả ảnh + tìm kiếm | ✅ |
+| `GET` | `/api/gallery/image/` | Lấy tất cả ảnh + tìm kiếm + pagination | ✅ |
 | `GET` | `/api/gallery/image/:id` | Chi tiết ảnh | ✅ |
 | `POST` | `/api/gallery/image/upload` | Upload ảnh (nhiều files) | ✅ |
 | `DELETE` | `/api/gallery/image/:id` | Xóa ảnh | ✅ |
@@ -129,11 +131,51 @@ GET /api/gallery/image/?search=vacation
 GET /api/gallery/image/?search=biển
 ```
 
+#### 📄 **Pagination**
+```bash
+# Pagination cho images
+GET /api/gallery/image/?page=1&limit=10
+GET /api/gallery/image/?page=2&limit=5
+
+# Pagination cho albums  
+GET /api/gallery/album/?page=1&limit=8
+GET /api/gallery/album/?page=3&limit=12
+
+# Kết hợp tìm kiếm và pagination
+GET /api/gallery/image/?search=vacation&page=1&limit=6
+```
+
+**Pagination Parameters:**
+- `page`: Số trang (mặc định: 1, tối thiểu: 1)
+- `limit`: Số items mỗi trang (mặc định: 10, tối đa: 100)
+
+**Pagination Response:**
+```json
+{
+  "status": "success", 
+  "message": "Images retrieved successfully",
+  "metadata": {
+    "images": [...],
+    "pagination": {
+      "currentPage": 1,
+      "itemsPerPage": 10,
+      "totalItems": 150,
+      "totalPages": 15,
+      "remainingPages": 14,
+      "hasNextPage": true,
+      "hasPreviousPage": false,
+      "nextPage": 2,
+      "previousPage": null
+    }
+  }
+}
+```
+
 ### 📚 **Album Management**
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `GET` | `/api/gallery/album/` | Lấy tất cả album | ✅ |
+| `GET` | `/api/gallery/album/` | Lấy tất cả album + pagination | ✅ |
 | `GET` | `/api/gallery/album/:id` | Chi tiết album | ✅ |
 | `POST` | `/api/gallery/album/` | Tạo album mới | ✅ |
 | `PUT` | `/api/gallery/album/:id` | Cập nhật album | ✅ |
@@ -199,6 +241,40 @@ const searchImages = async (query) => {
   return data.metadata.images;
 };
 
+// Pagination examples
+const getImagesPaginated = async (page = 1, limit = 10, searchQuery = '') => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString()
+  });
+  
+  if (searchQuery) {
+    params.append('search', searchQuery);
+  }
+
+  const response = await fetch(`/api/gallery/image/?${params}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  const data = await response.json();
+  return {
+    images: data.metadata.images,
+    pagination: data.metadata.pagination
+  };
+};
+
+const getAlbumsPaginated = async (page = 1, limit = 8) => {
+  const response = await fetch(`/api/gallery/album/?page=${page}&limit=${limit}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  const data = await response.json();
+  return {
+    albums: data.metadata.albums,
+    pagination: data.metadata.pagination
+  };
+};
+
 // Bulk album operations
 const addImagesToAlbum = async (imageIds, albumId) => {
   const response = await fetch('/api/gallery/image/bulk/add-to-album', {
@@ -214,25 +290,42 @@ const addImagesToAlbum = async (imageIds, albumId) => {
 };
 ```
 
-#### React Hook Example
+#### React Hook Example với Pagination
 ```jsx
 import { useState, useEffect } from 'react';
 
-const usePhotoGallery = (searchQuery = '') => {
+const usePhotoGallery = (searchQuery = '', page = 1, limit = 10) => {
   const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [albums, setAlbums] = useState([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 0,
+    totalItems: 0,
+    hasNextPage: false,
+    hasPreviousPage: false
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchImages = async () => {
       setLoading(true);
       try {
-        const params = searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : '';
-        const response = await fetch(`/api/gallery/image/${params}`, {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: limit.toString()
+        });
+        
+        if (searchQuery) {
+          params.append('search', searchQuery);
+        }
+
+        const response = await fetch(`/api/gallery/image/?${params}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const data = await response.json();
+        
         setImages(data.metadata.images);
+        setPagination(data.metadata.pagination);
       } catch (error) {
         console.error('Fetch images error:', error);
       } finally {
@@ -241,7 +334,21 @@ const usePhotoGallery = (searchQuery = '') => {
     };
 
     fetchImages();
-  }, [searchQuery]);
+  }, [searchQuery, page, limit]);
+
+  const fetchAlbums = async (albumPage = 1, albumLimit = 8) => {
+    try {
+      const response = await fetch(`/api/gallery/album/?page=${albumPage}&limit=${albumLimit}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await response.json();
+      
+      setAlbums(data.metadata.albums);
+      return data.metadata.pagination;
+    } catch (error) {
+      console.error('Fetch albums error:', error);
+    }
+  };
 
   const addToAlbum = async (imageIds, albumId) => {
     const response = await fetch('/api/gallery/image/bulk/add-to-album', {
@@ -255,7 +362,60 @@ const usePhotoGallery = (searchQuery = '') => {
     return await response.json();
   };
 
-  return { images, loading, albums, addToAlbum };
+  return { 
+    images, 
+    albums, 
+    pagination, 
+    loading, 
+    addToAlbum, 
+    fetchAlbums 
+  };
+};
+
+// Usage trong component
+const Gallery = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { images, pagination, loading } = usePhotoGallery(searchTerm, currentPage, 12);
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+    setCurrentPage(1); // Reset về trang đầu khi search
+  };
+
+  return (
+    <div>
+      <SearchInput onSearch={handleSearch} />
+      
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        <>
+          <ImageGrid images={images} />
+          
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+            hasNext={pagination.hasNextPage}
+            hasPrevious={pagination.hasPreviousPage}
+          />
+          
+          <div className="pagination-info">
+            Hiển thị {images.length} / {pagination.totalItems} ảnh
+            (Trang {pagination.currentPage} / {pagination.totalPages})
+            {pagination.remainingPages > 0 && (
+              <span> - Còn {pagination.remainingPages} trang</span>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 ```
 
@@ -440,6 +600,61 @@ curl -X POST http://localhost:3002/api/gallery/image/bulk/add-to-album \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"imageIds":[123,456],"albumId":789}'
+
+# 7. Test Pagination - Images
+curl -X GET "http://localhost:3002/api/gallery/image/?page=1&limit=5" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 8. Test Pagination - Albums  
+curl -X GET "http://localhost:3002/api/gallery/album/?page=2&limit=3" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 9. Test Search with Pagination
+curl -X GET "http://localhost:3002/api/gallery/image/?search=vacation&page=1&limit=8" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 10. Test Large Limit (will be capped at 100)
+curl -X GET "http://localhost:3002/api/gallery/image/?page=1&limit=200" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 11. Test Edge Cases
+curl -X GET "http://localhost:3002/api/gallery/image/?page=0&limit=5" \
+  -H "Authorization: Bearer YOUR_TOKEN"  # Page will default to 1
+```
+
+### 📊 **Pagination Response Format**
+
+Tất cả API có pagination đều trả về format thống nhất:
+
+```json
+{
+  "status": "success",
+  "message": "Data retrieved successfully", 
+  "metadata": {
+    "images": [...],        // hoặc "albums": [...]
+    "pagination": {
+      "currentPage": 2,          // Trang hiện tại
+      "itemsPerPage": 10,        // Số items mỗi trang
+      "totalItems": 150,         // Tổng số items
+      "totalPages": 15,          // Tổng số trang
+      "remainingPages": 13,      // Số trang còn lại
+      "hasNextPage": true,       // Có trang tiếp theo
+      "hasPreviousPage": true,   // Có trang trước đó
+      "nextPage": 3,            // Số trang tiếp theo (null nếu không có)
+      "previousPage": 1         // Số trang trước đó (null nếu không có)
+    },
+    "searchQuery": "vacation"    // Từ khóa search (nếu có)
+  }
+}
+```
+
+### 🚀 **Pagination Best Practices**
+
+1. **Default Values**: Nếu không cung cấp page/limit, hệ thống sẽ dùng page=1, limit=10
+2. **Validation**: page >= 1, limit <= 100
+3. **Performance**: Pagination sử dụng MongoDB skip/limit với indexes
+4. **Consistency**: Cùng format response cho tất cả APIs có pagination
+5. **Metadata**: Đầy đủ thông tin navigation để frontend dễ dàng implement UI
 ```
 
 ## 🤝 **Contributing**
@@ -776,29 +991,50 @@ Authorization: Bearer <your-access-token>
 }
 ```
 
-#### 3. Lấy tất cả hình ảnh của user
+#### 3. Lấy tất cả hình ảnh của user (với Pagination)
 ```http
-GET /api/images
+GET /api/gallery/image/?page=1&limit=10&search=vacation
 Authorization: Bearer <your-access-token>
 ```
+
+**Query Parameters:**
+- `page`: Số trang (optional, default: 1)
+- `limit`: Số items mỗi trang (optional, default: 10, max: 100)
+- `search`: Từ khóa tìm kiếm (optional)
 
 **Response:**
 ```json
 {
   "status": "success",
   "message": "All images retrieved successfully",
-  "metadata": [
-    {
-      "id": 123456,
-      "secureUrl": "https://res.cloudinary.com/...",
-      "format": "jpg",
-      "width": 1920,
-      "height": 1080,
-      "caption": "Beautiful sunset",
-      "createdAt": "2025-08-03T10:30:00.000Z"
-    }
-  ]
+  "metadata": {
+    "images": [
+      {
+        "id": 123456,
+        "secureUrl": "https://res.cloudinary.com/...",
+        "format": "jpg",
+        "width": 1920,
+        "height": 1080,
+        "caption": "Beautiful sunset",
+        "tags": ["vacation", "beach"],
+        "createdAt": "2025-08-03T10:30:00.000Z"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "itemsPerPage": 10,
+      "totalItems": 150,
+      "totalPages": 15,
+      "remainingPages": 14,
+      "hasNextPage": true,
+      "hasPreviousPage": false,
+      "nextPage": 2,
+      "previousPage": null
+    },
+    "searchQuery": "vacation"
+  }
 }
+```
 ```
 
 #### 4. Lấy hình ảnh theo album
@@ -855,27 +1091,47 @@ Content-Type: application/json
 }
 ```
 
-#### 2. Lấy tất cả album của user
+#### 2. Lấy tất cả album của user (với Pagination)
 ```http
-GET /api/albums
+GET /api/gallery/album/?page=1&limit=8
 Authorization: Bearer <your-access-token>
 ```
+
+**Query Parameters:**
+- `page`: Số trang (optional, default: 1)
+- `limit`: Số items mỗi trang (optional, default: 10, max: 100)
 
 **Response:**
 ```json
 {
   "status": "success",
   "message": "Albums retrieved successfully",
-  "metadata": [
-    {
-      "id": 789012,
-      "title": "Kỳ nghỉ hè 2025",
-      "description": "Những kỷ niệm đẹp từ kỳ nghỉ hè",
-      "cover_image": "507f1f77bcf86cd799439011",
-      "isPublic": false
+  "metadata": {
+    "albums": [
+      {
+        "id": 789012,
+        "title": "Kỳ nghỉ hè 2025",
+        "description": "Những kỷ niệm đẹp từ kỳ nghỉ hè",
+        "cover_image": "507f1f77bcf86cd799439011",
+        "isPublic": false,
+        "imageCount": 25,
+        "createdAt": "2025-08-03T10:30:00.000Z"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "itemsPerPage": 8,
+      "totalItems": 45,
+      "totalPages": 6,
+      "remainingPages": 5,
+      "hasNextPage": true,
+      "hasPreviousPage": false,
+      "nextPage": 2,
+      "previousPage": null
     }
-  ]
+  }
 }
+```
 ```
 
 #### 3. Chỉnh sửa album
@@ -1007,6 +1263,12 @@ Authorization: Bearer <your-access-token>
    - **Images**: Login → Upload Images → Get Images → Delete Image
    - **Albums**: Login → Create Album → Get Albums → Edit Album
    - **Tags**: Login → Create Tag → Get Tags → Delete Tag
+   - **Pagination**: Login → Test Images Pagination → Test Albums Pagination
+     - First Page Test (page=1)
+     - Second Page Test (page=2)
+     - Large Limit Test (limit=200, capped at 100)
+     - Search + Pagination Test
+     - Edge Cases (invalid page=0)
 
 ## �📁 Cấu trúc project
 
