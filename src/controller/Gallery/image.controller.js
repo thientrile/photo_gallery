@@ -85,15 +85,15 @@ const getImage = async (req, res) => {
     }).send(res);
 }
 const getAllImage = async (req, res) => {
-    const { search } = req.query; // Lấy query parameter search
-    const images = await getAllImagesByUserId(req.decoded.userId, search);
+    const { search, page, limit } = req.query; // Lấy query parameters
+    const result = await getAllImagesByUserId(req.decoded.userId, search, page, limit);
 
     new SuccessResponse({
         message: search ? `Images found for "${search}"` : 'All images retrieved successfully',
         metadata: {
             searchQuery: search || null,
-            totalFound: images.length,
-            images: images
+            images: result.images,
+            pagination: result.pagination
         }
     }).send(res);
 }

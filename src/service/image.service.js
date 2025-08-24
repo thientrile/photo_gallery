@@ -128,8 +128,13 @@ const getImageById = async (imageId) => {
     }
     return omitInfoData({ fields: outputImages, object: removePrefixFromKeys(image, 'img_') });
 }
-const getAllImagesByUserId = async (userId, searchQuery = null) => {
+const getAllImagesByUserId = async (userId, searchQuery = null, page = 1, limit = 10) => {
     try {
+        // Validate pagination parameters
+        const currentPage = Math.max(1, parseInt(page) || 1);
+        const itemsPerPage = Math.max(1, Math.min(100, parseInt(limit) || 10)); // Max 100 items per page
+        const skip = (currentPage - 1) * itemsPerPage;
+
         // Base query - lấy ảnh của user
         let query = { img_uploaderId: convertToObjectIdMongoose(userId) };
         
@@ -156,13 +161,21 @@ const getAllImagesByUserId = async (userId, searchQuery = null) => {
                 ]
             };
         }
+
+        // Get total count for pagination
+        const totalItems = await ImageModel.countDocuments(query);
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        const remainingPages = Math.max(0, totalPages - currentPage);
         
+        // Get paginated results
         const images = await ImageModel.find(query)
             .populate('img_albumId', 'alb_title alb_id')
             .sort({ createdAt: -1 }) // Sắp xếp theo thời gian tạo mới nhất
+            .skip(skip)
+            .limit(itemsPerPage)
             .lean();
 
-        return images.map((img) => {
+        const processedImages = images.map((img) => {
             const imageData = omitInfoData({ 
                 fields: outputImages, 
                 object: removePrefixFromKeys(img, 'img_') 
@@ -178,6 +191,22 @@ const getAllImagesByUserId = async (userId, searchQuery = null) => {
             
             return imageData;
         });
+
+        // Return data with pagination info
+        return {
+            images: processedImages,
+            pagination: {
+                currentPage: currentPage,
+                itemsPerPage: itemsPerPage,
+                totalItems: totalItems,
+                totalPages: totalPages,
+                remainingPages: remainingPages,
+                hasNextPage: currentPage < totalPages,
+                hasPreviousPage: currentPage > 1,
+                nextPage: currentPage < totalPages ? currentPage + 1 : null,
+                previousPage: currentPage > 1 ? currentPage - 1 : null
+            }
+        };
     } catch (error) {
         console.error('❌ Get all images error:', error);
         throw new BadRequestError('Failed to get images');

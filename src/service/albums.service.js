@@ -29,8 +29,83 @@ const createNewAbums = async (payload, userId) => {
 }
 
 
-const getAllAlbumsOfUser = async (userId) => {
-    return await getAlbumByUserId(userId);
+const getAllAlbumsOfUser = async (userId, page = 1, limit = 10) => {
+    // Validate pagination parameters
+    const currentPage = Math.max(1, parseInt(page) || 1);
+    const itemsPerPage = Math.max(1, Math.min(100, parseInt(limit) || 10)); // Max 100 items per page
+    const skip = (currentPage - 1) * itemsPerPage;
+
+    // Get total count first
+    const totalItems = await albumModel.countDocuments({ 
+        alb_userId: convertToObjectIdMongoose(userId) 
+    });
+    
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const remainingPages = Math.max(0, totalPages - currentPage);
+
+    // Get paginated albums
+    const albums = await albumModel.aggregate([
+        {
+            $match: {
+                alb_userId: convertToObjectIdMongoose(userId)
+            }
+        },
+        {
+            $lookup: {
+                from: "Images",
+                localField: "alb_cover_image",
+                foreignField: "_id",
+                as: "cover_image_data"
+            }
+        },
+        {
+            $unwind: {
+                path: "$cover_image_data",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $addFields: {
+                cover_image: "$cover_image_data.img_secureUrl"
+            }
+        },
+        {
+            $sort: { createdAt: -1 } // Sort by newest first
+        },
+        {
+            $skip: skip
+        },
+        {
+            $limit: itemsPerPage
+        },
+        {
+            $project: {
+                _id: 0,
+                id: "$alb_id",
+                title: "$alb_title",
+                description: "$alb_description",
+                cover_image: 1,
+                isPublic: "$alb_isPublic",
+                createdAt: 1,
+                updatedAt: 1
+            }
+        }
+    ]);
+
+    return {
+        albums: albums,
+        pagination: {
+            currentPage: currentPage,
+            itemsPerPage: itemsPerPage,
+            totalItems: totalItems,
+            totalPages: totalPages,
+            remainingPages: remainingPages,
+            hasNextPage: currentPage < totalPages,
+            hasPreviousPage: currentPage > 1,
+            nextPage: currentPage < totalPages ? currentPage + 1 : null,
+            previousPage: currentPage > 1 ? currentPage - 1 : null
+        }
+    };
 }
 
 const editAlbum = async (userId, albumId, payload) => {

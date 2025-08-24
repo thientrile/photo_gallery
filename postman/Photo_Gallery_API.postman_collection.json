@@ -528,9 +528,21 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Response contains albums array\", function () {",
+									"pm.test(\"Response contains albums and pagination\", function () {",
 									"    const responseJson = pm.response.json();",
-									"    pm.expect(responseJson.metadata).to.be.an('array');",
+									"    pm.expect(responseJson.metadata).to.have.property('albums');",
+									"    pm.expect(responseJson.metadata).to.have.property('pagination');",
+									"    pm.expect(responseJson.metadata.albums).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Pagination structure is correct\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const pagination = responseJson.metadata.pagination;",
+									"    pm.expect(pagination).to.have.property('currentPage');",
+									"    pm.expect(pagination).to.have.property('totalPages');",
+									"    pm.expect(pagination).to.have.property('remainingPages');",
+									"    pm.expect(pagination).to.have.property('itemsPerPage');",
+									"    pm.expect(pagination).to.have.property('totalItems');",
 									"});",
 									"",
 									"pm.test(\"Response time is acceptable\", function () {",
@@ -550,7 +562,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/api/gallery/album/",
+							"raw": "{{base_url}}/api/gallery/album/?page=1&limit=10",
 							"host": [
 								"{{base_url}}"
 							],
@@ -559,6 +571,16 @@
 								"gallery",
 								"album",
 								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
 							]
 						}
 					}
@@ -790,6 +812,361 @@
 								"gallery",
 								"album",
 								"{{test_album_id}}"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Pagination Tests",
+			"item": [
+				{
+					"name": "Albums Pagination - First Page",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"First page pagination is correct\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const pagination = responseJson.metadata.pagination;",
+									"    pm.expect(pagination.currentPage).to.equal(1);",
+									"    pm.expect(pagination.hasPreviousPage).to.be.false;",
+									"    pm.expect(pagination.previousPage).to.be.null;",
+									"    console.log('Albums Pagination:', JSON.stringify(pagination, null, 2));",
+									"});",
+									"",
+									"pm.test(\"Albums array exists\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata.albums).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/?page=1&limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Albums Pagination - Second Page",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Second page pagination is correct\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const pagination = responseJson.metadata.pagination;",
+									"    pm.expect(pagination.currentPage).to.equal(2);",
+									"    pm.expect(pagination.hasPreviousPage).to.be.true;",
+									"    pm.expect(pagination.previousPage).to.equal(1);",
+									"    console.log('Page 2 Albums:', JSON.stringify(pagination, null, 2));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/?page=2&limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "2"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Images Pagination - First Page",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Images first page pagination is correct\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const pagination = responseJson.metadata.pagination;",
+									"    pm.expect(pagination.currentPage).to.equal(1);",
+									"    pm.expect(pagination.itemsPerPage).to.equal(5);",
+									"    pm.expect(pagination.hasPreviousPage).to.be.false;",
+									"    console.log('Images Pagination:', JSON.stringify(pagination, null, 2));",
+									"});",
+									"",
+									"pm.test(\"Images array exists\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata.images).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?page=1&limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Images Pagination - Large Limit Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Large limit is capped at 100\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const pagination = responseJson.metadata.pagination;",
+									"    pm.expect(pagination.itemsPerPage).to.be.at.most(100);",
+									"    console.log('Large limit result:', pagination.itemsPerPage);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?page=1&limit=200",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "200"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search with Pagination",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Search with pagination works correctly\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('searchQuery');",
+									"    pm.expect(responseJson.metadata).to.have.property('pagination');",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"    ",
+									"    const pagination = responseJson.metadata.pagination;",
+									"    pm.expect(pagination.currentPage).to.equal(1);",
+									"    pm.expect(pagination.itemsPerPage).to.equal(3);",
+									"    ",
+									"    console.log(`Search found ${pagination.totalItems} items for query 'mùa hè'`);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?search=mùa hè&page=1&limit=3",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "mùa hè"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "3"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Edge Case - Invalid Page",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Invalid page defaults to 1\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const pagination = responseJson.metadata.pagination;",
+									"    pm.expect(pagination.currentPage).to.equal(1);",
+									"    console.log('Invalid page handled correctly:', pagination.currentPage);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/?page=0&limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
 							]
 						}
 					}

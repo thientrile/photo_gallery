@@ -24,10 +24,14 @@ const editAlbumByUser = async (req, res) => {
 }
 const getAllAlbumsByUser = async (req, res) => {
     const userId = req.decoded.userId;
-    const albums = await getAllAlbumsOfUser(userId);
+    const { page, limit } = req.query; // Lấy pagination parameters
+    const result = await getAllAlbumsOfUser(userId, page, limit);
     new SuccessResponse({
         message: 'All albums retrieved successfully',
-        metadata: albums
+        metadata: {
+            albums: result.albums,
+            pagination: result.pagination
+        }
     }).send(res);
 }
 
