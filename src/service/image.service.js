@@ -468,6 +468,241 @@ const removeMultipleImagesFromAlbum = async (imageIds, userId) => {
   }
 };
 
+// Thêm/Xóa ảnh yêu thích
+const toggleFavoriteImage = async (imageId, userId) => {
+  try {
+    // Kiểm tra ảnh có tồn tại và thuộc về user này không
+    const image = await ImageModel.findOne({
+      img_id: imageId,
+      img_uploaderId: convertToObjectIdMongoose(userId)
+    });
+
+    if (!image) {
+      throw new BadRequestError('Ảnh không tồn tại hoặc không thuộc quyền sở hữu');
+    }
+
+    // Toggle trạng thái yêu thích
+    const newFavoriteStatus = !image.img_isLove;
+    
+    const updatedImage = await ImageModel.findByIdAndUpdate(
+      image._id,
+      { img_isLove: newFavoriteStatus },
+      { new: true }
+    ).populate('img_albumId', 'alb_title alb_id').lean();
+
+    const imageData = omitInfoData({ 
+      fields: outputImages, 
+      object: removePrefixFromKeys(updatedImage, 'img_') 
+    });
+
+    // Thêm thông tin album nếu có
+    if (updatedImage.img_albumId) {
+      imageData.album = {
+        id: updatedImage.img_albumId.alb_id,
+        title: updatedImage.img_albumId.alb_title
+      };
+    }
+
+    return {
+      success: true,
+      message: newFavoriteStatus ? 'Đã thêm ảnh vào danh sách yêu thích' : 'Đã xóa ảnh khỏi danh sách yêu thích',
+      isFavorite: newFavoriteStatus,
+      image: imageData
+    };
+  } catch (error) {
+    console.error('❌ Toggle favorite image error:', error);
+    throw error instanceof BadRequestError ? error : new BadRequestError('Không thể cập nhật trạng thái yêu thích');
+  }
+};
+
+// Lấy danh sách ảnh yêu thích với phân trang
+const getFavoriteImages = async (userId, page = 1, limit = 10) => {
+  try {
+    // Validate pagination parameters
+    const currentPage = Math.max(1, parseInt(page) || 1);
+    const itemsPerPage = Math.max(1, Math.min(100, parseInt(limit) || 10)); // Max 100 items per page
+    const skip = (currentPage - 1) * itemsPerPage;
+
+    // Query chỉ lấy ảnh yêu thích của user
+    const query = { 
+      img_uploaderId: convertToObjectIdMongoose(userId),
+      img_isLove: true 
+    };
+
+    // Get total count for pagination
+    const totalItems = await ImageModel.countDocuments(query);
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const remainingPages = Math.max(0, totalPages - currentPage);
+    
+    // Get paginated results
+    const favoriteImages = await ImageModel.find(query)
+      .populate('img_albumId', 'alb_title alb_id')
+      .sort({ updatedAt: -1 }) // Sắp xếp theo thời gian cập nhật yêu thích mới nhất
+      .skip(skip)
+      .limit(itemsPerPage)
+      .lean();
+
+    const processedImages = favoriteImages.map((img) => {
+      const imageData = omitInfoData({ 
+        fields: outputImages, 
+        object: removePrefixFromKeys(img, 'img_') 
+      });
+      
+      // Thêm thông tin album nếu có
+      if (img.img_albumId) {
+        imageData.album = {
+          id: img.img_albumId.alb_id,
+          title: img.img_albumId.alb_title
+        };
+      }
+      
+      return imageData;
+    });
+
+    // Return data with pagination info
+    return {
+      favoriteImages: processedImages,
+      pagination: {
+        currentPage: currentPage,
+        itemsPerPage: itemsPerPage,
+        totalItems: totalItems,
+        totalPages: totalPages,
+        remainingPages: remainingPages,
+        hasNextPage: currentPage < totalPages,
+        hasPreviousPage: currentPage > 1,
+        nextPage: currentPage < totalPages ? currentPage + 1 : null,
+        previousPage: currentPage > 1 ? currentPage - 1 : null
+      }
+    };
+  } catch (error) {
+    console.error('❌ Get favorite images error:', error);
+    throw new BadRequestError('Không thể lấy danh sách ảnh yêu thích');
+  }
+};
+
+// Thêm nhiều ảnh vào danh sách yêu thích
+const addMultipleToFavorites = async (imageIds, userId) => {
+  try {
+    // Lấy tất cả ảnh thuộc về user và có trong danh sách imageIds
+    const images = await ImageModel.find({
+      img_id: { $in: imageIds },
+      img_uploaderId: convertToObjectIdMongoose(userId)
+    });
+
+    if (!images.length) {
+      throw new BadRequestError('Không tìm thấy ảnh nào thuộc quyền sở hữu');
+    }
+
+    // Lọc ra những ảnh chưa được yêu thích
+    const imagesToUpdate = images.filter(img => !img.img_isLove);
+
+    if (!imagesToUpdate.length) {
+      return {
+        success: true,
+        message: 'Tất cả ảnh đã có trong danh sách yêu thích rồi',
+        addedCount: 0,
+        totalRequested: imageIds.length,
+        images: []
+      };
+    }
+
+    // Cập nhật tất cả ảnh để thêm vào yêu thích
+    await ImageModel.updateMany(
+      { _id: { $in: imagesToUpdate.map(img => img._id) } },
+      { img_isLove: true }
+    );
+
+    // Lấy lại ảnh đã cập nhật
+    const updatedImages = await ImageModel.find({
+      _id: { $in: imagesToUpdate.map(img => img._id) }
+    }).populate('img_albumId', 'alb_title alb_id').lean();
+
+    const imageData = updatedImages.map((img) => {
+      const data = omitInfoData({ 
+        fields: outputImages, 
+        object: removePrefixFromKeys(img, 'img_') 
+      });
+
+      if (img.img_albumId) {
+        data.album = {
+          id: img.img_albumId.alb_id,
+          title: img.img_albumId.alb_title
+        };
+      }
+
+      return data;
+    });
+
+    return {
+      success: true,
+      message: `Đã thêm ${imagesToUpdate.length} ảnh vào danh sách yêu thích`,
+      addedCount: imagesToUpdate.length,
+      totalRequested: imageIds.length,
+      images: imageData
+    };
+  } catch (error) {
+    console.error('❌ Add multiple to favorites error:', error);
+    throw error instanceof BadRequestError ? error : new BadRequestError('Không thể thêm ảnh vào danh sách yêu thích');
+  }
+};
+
+// Xóa nhiều ảnh khỏi danh sách yêu thích
+const removeMultipleFromFavorites = async (imageIds, userId) => {
+  try {
+    // Lấy tất cả ảnh thuộc về user, có trong danh sách imageIds và đang được yêu thích
+    const images = await ImageModel.find({
+      img_id: { $in: imageIds },
+      img_uploaderId: convertToObjectIdMongoose(userId),
+      img_isLove: true
+    }).populate('img_albumId', 'alb_title alb_id');
+
+    if (!images.length) {
+      throw new BadRequestError('Không tìm thấy ảnh nào trong danh sách yêu thích');
+    }
+
+    // Cập nhật tất cả ảnh để xóa khỏi yêu thích
+    await ImageModel.updateMany(
+      { _id: { $in: images.map(img => img._id) } },
+      { img_isLove: false }
+    );
+
+    // Lấy lại ảnh đã cập nhật
+    const updatedImages = await ImageModel.find({
+      _id: { $in: images.map(img => img._id) }
+    }).lean();
+
+    const imageData = updatedImages.map((img) => {
+      const data = omitInfoData({ 
+        fields: outputImages, 
+        object: removePrefixFromKeys(img, 'img_') 
+      });
+
+      if (img.img_albumId) {
+        data.album = {
+          id: img.img_albumId.alb_id,
+          title: img.img_albumId.alb_title
+        };
+      }
+
+      return data;
+    });
+
+    return {
+      success: true,
+      message: `Đã xóa ${images.length} ảnh khỏi danh sách yêu thích`,
+      removedCount: images.length,
+      totalRequested: imageIds.length,
+      images: imageData
+    };
+  } catch (error) {
+    console.error('❌ Remove multiple from favorites error:', error);
+    throw error instanceof BadRequestError ? error : new BadRequestError('Không thể xóa ảnh khỏi danh sách yêu thích');
+  }
+};
+
+
+
+
 module.exports = {
     uploadImages,
     getImageById,
@@ -477,5 +712,9 @@ module.exports = {
     addImageToAlbum,
     removeImageFromAlbum,
     addMultipleImagesToAlbum,
-    removeMultipleImagesFromAlbum
+    removeMultipleImagesFromAlbum,
+    toggleFavoriteImage,
+    getFavoriteImages,
+    addMultipleToFavorites,
+    removeMultipleFromFavorites
 };

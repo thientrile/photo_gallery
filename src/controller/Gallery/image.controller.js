@@ -1,4 +1,4 @@
-const { uploadImages, getImageById, getAllImagesByUserId, getAllImagesByAlbumId, deleteImageById, addImageToAlbum, removeImageFromAlbum, addMultipleImagesToAlbum, removeMultipleImagesFromAlbum } = require("../../service/image.service");
+const { uploadImages, getImageById, getAllImagesByUserId, getAllImagesByAlbumId, deleteImageById, addImageToAlbum, removeImageFromAlbum, addMultipleImagesToAlbum, removeMultipleImagesFromAlbum, toggleFavoriteImage, getFavoriteImages, addMultipleToFavorites, removeMultipleFromFavorites } = require("../../service/image.service");
 const { SuccessResponse } = require("../../utils/handRespones/success.response");
 const { BadRequestError } = require("../../utils/handRespones/error.response");
 
@@ -185,6 +185,76 @@ const removeMultipleFromAlbum = async (req, res) => {
     }).send(res);
 };
 
+// Toggle trạng thái yêu thích của ảnh
+const toggleFavorite = async (req, res) => {
+    const { imageId } = req.params;
+    const userId = req.decoded.userId;
+
+    if (!imageId) {
+        throw new BadRequestError('Image ID is required');
+    }
+
+    const result = await toggleFavoriteImage(imageId, userId);
+    
+    new SuccessResponse({
+        message: result.message,
+        metadata: {
+            isFavorite: result.isFavorite,
+            image: result.image
+        }
+    }).send(res);
+};
+
+// Lấy danh sách ảnh yêu thích
+const getFavorites = async (req, res) => {
+    const userId = req.decoded.userId;
+    const { page, limit } = req.query;
+
+    const result = await getFavoriteImages(userId, page, limit);
+    
+    new SuccessResponse({
+        message: 'Favorite images retrieved successfully',
+        metadata: {
+            favoriteImages: result.favoriteImages,
+            pagination: result.pagination
+        }
+    }).send(res);
+};
+
+// Thêm nhiều ảnh vào danh sách yêu thích
+const addMultipleFavorites = async (req, res) => {
+    const { imageIds } = req.body;
+    const userId = req.decoded.userId;
+
+    if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+        throw new BadRequestError('Image IDs array is required and must not be empty');
+    }
+
+    const result = await addMultipleToFavorites(imageIds, userId);
+    
+    new SuccessResponse({
+        message: result.message,
+        metadata: result
+    }).send(res);
+};
+
+// Xóa nhiều ảnh khỏi danh sách yêu thích
+const removeMultipleFavorites = async (req, res) => {
+    const { imageIds } = req.body;
+    const userId = req.decoded.userId;
+
+    if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+        throw new BadRequestError('Image IDs array is required and must not be empty');
+    }
+
+    const result = await removeMultipleFromFavorites(imageIds, userId);
+    
+    new SuccessResponse({
+        message: result.message,
+        metadata: result
+    }).send(res);
+};
+
 module.exports = {
     getAllImageByAlbumId,
     uploadImage,
@@ -195,5 +265,9 @@ module.exports = {
     addToAlbum,
     removeFromAlbum,
     addMultipleToAlbum,
-    removeMultipleFromAlbum
+    removeMultipleFromAlbum,
+    toggleFavorite,
+    getFavorites,
+    addMultipleFavorites,
+    removeMultipleFavorites
 };

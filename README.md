@@ -26,6 +26,7 @@ Photo Gallery API là một backend service mạnh mẽ được xây dựng đ�
 - ✅ **Metadata tự động** - kích thước, format, dung lượng
 - ✅ **Tìm kiếm thông minh** theo tags và tên album
 - ✅ **Phân trang nâng cao** - pagination với metadata chi tiết
+- ✅ **Ảnh yêu thích** - toggle, danh sách, bulk operations
 - ✅ **Xóa an toàn** - xóa cả trên cloud và database
 
 #### 📚 **Quản Lý Album**
@@ -120,6 +121,15 @@ curl http://localhost:3002/health
 | `POST` | `/api/gallery/image/upload` | Upload ảnh (nhiều files) | ✅ |
 | `DELETE` | `/api/gallery/image/:id` | Xóa ảnh | ✅ |
 
+### ❤️ **Favorite Images Management**
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/gallery/image/:id/toggle-favorite` | Toggle trạng thái yêu thích | ✅ |
+| `GET` | `/api/gallery/image/favorites/list` | Lấy danh sách ảnh yêu thích + pagination | ✅ |
+| `POST` | `/api/gallery/image/favorites/add-multiple` | Thêm nhiều ảnh vào yêu thích | ✅ |
+| `POST` | `/api/gallery/image/favorites/remove-multiple` | Xóa nhiều ảnh khỏi yêu thích | ✅ |
+
 #### 🔍 **Tìm Kiếm Ảnh**
 ```bash
 # Lấy tất cả ảnh
@@ -166,6 +176,70 @@ GET /api/gallery/image/?search=vacation&page=1&limit=6
       "hasPreviousPage": false,
       "nextPage": 2,
       "previousPage": null
+    }
+  }
+}
+```
+
+#### ❤️ **Ảnh Yêu Thích**
+```bash
+# Toggle trạng thái yêu thích (thêm/xóa)
+POST /api/gallery/image/123456/toggle-favorite
+
+# Lấy danh sách ảnh yêu thích với pagination
+GET /api/gallery/image/favorites/list?page=1&limit=10
+GET /api/gallery/image/favorites/list?page=2&limit=5
+
+# Thêm nhiều ảnh vào yêu thích
+POST /api/gallery/image/favorites/add-multiple
+Body: { "imageIds": [123456, 789012, 345678] }
+
+# Xóa nhiều ảnh khỏi yêu thích
+POST /api/gallery/image/favorites/remove-multiple
+Body: { "imageIds": [123456, 789012] }
+```
+
+**Favorite Response Format:**
+```json
+{
+  "status": "success",
+  "message": "Đã thêm ảnh vào danh sách yêu thích",
+  "metadata": {
+    "isFavorite": true,
+    "image": {
+      "id": 123456,
+      "secureUrl": "https://res.cloudinary.com/...",
+      "isLove": true,
+      "tags": ["vacation", "beach"],
+      "caption": "Beautiful sunset"
+    }
+  }
+}
+```
+
+**Favorite List Response:**
+```json
+{
+  "status": "success",
+  "message": "Favorite images retrieved successfully",
+  "metadata": {
+    "favoriteImages": [
+      {
+        "id": 123456,
+        "secureUrl": "https://res.cloudinary.com/...",
+        "isLove": true,
+        "tags": ["vacation"],
+        "caption": "My favorite photo"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "itemsPerPage": 10,
+      "totalItems": 25,
+      "totalPages": 3,
+      "remainingPages": 2,
+      "hasNextPage": true,
+      "hasPreviousPage": false
     }
   }
 }
@@ -288,6 +362,54 @@ const addImagesToAlbum = async (imageIds, albumId) => {
   
   return await response.json();
 };
+
+// Favorite operations
+const toggleFavoriteImage = async (imageId) => {
+  const response = await fetch(`/api/gallery/image/${imageId}/toggle-favorite`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  return await response.json();
+};
+
+const getFavoriteImages = async (page = 1, limit = 10) => {
+  const response = await fetch(`/api/gallery/image/favorites/list?page=${page}&limit=${limit}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  const data = await response.json();
+  return {
+    favoriteImages: data.metadata.favoriteImages,
+    pagination: data.metadata.pagination
+  };
+};
+
+const addMultipleToFavorites = async (imageIds) => {
+  const response = await fetch('/api/gallery/image/favorites/add-multiple', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ imageIds })
+  });
+  
+  return await response.json();
+};
+
+const removeMultipleFromFavorites = async (imageIds) => {
+  const response = await fetch('/api/gallery/image/favorites/remove-multiple', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ imageIds })
+  });
+  
+  return await response.json();
+};
 ```
 
 #### React Hook Example với Pagination
@@ -362,21 +484,70 @@ const usePhotoGallery = (searchQuery = '', page = 1, limit = 10) => {
     return await response.json();
   };
 
+  const toggleFavorite = async (imageId) => {
+    const response = await fetch(`/api/gallery/image/${imageId}/toggle-favorite`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    return await response.json();
+  };
+
+  const fetchFavorites = async (favPage = 1, favLimit = 10) => {
+    try {
+      const response = await fetch(`/api/gallery/image/favorites/list?page=${favPage}&limit=${favLimit}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await response.json();
+      return {
+        favoriteImages: data.metadata.favoriteImages,
+        pagination: data.metadata.pagination
+      };
+    } catch (error) {
+      console.error('Fetch favorites error:', error);
+    }
+  };
+
+  const bulkFavoriteOperation = async (imageIds, operation = 'add') => {
+    const endpoint = operation === 'add' ? 'add-multiple' : 'remove-multiple';
+    const response = await fetch(`/api/gallery/image/favorites/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ imageIds })
+    });
+    return await response.json();
+  };
+
   return { 
     images, 
     albums, 
     pagination, 
     loading, 
     addToAlbum, 
-    fetchAlbums 
+    fetchAlbums,
+    toggleFavorite,
+    fetchFavorites,
+    bulkFavoriteOperation
   };
 };
 
-// Usage trong component
+// Usage trong component với favorite functionality
 const Gallery = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const { images, pagination, loading } = usePhotoGallery(searchTerm, currentPage, 12);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
+  
+  const { 
+    images, 
+    pagination, 
+    loading, 
+    toggleFavorite,
+    fetchFavorites,
+    bulkFavoriteOperation 
+  } = usePhotoGallery(searchTerm, currentPage, 12);
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -387,15 +558,74 @@ const Gallery = () => {
     setCurrentPage(1); // Reset về trang đầu khi search
   };
 
+  const handleToggleFavorite = async (imageId) => {
+    try {
+      const result = await toggleFavorite(imageId);
+      console.log(result.message);
+      // Refresh images to show updated favorite status
+      window.location.reload(); // Or better: update state
+    } catch (error) {
+      console.error('Toggle favorite error:', error);
+    }
+  };
+
+  const handleBulkFavorite = async (operation) => {
+    if (selectedImages.length === 0) return;
+    
+    try {
+      const result = await bulkFavoriteOperation(selectedImages, operation);
+      console.log(result.message);
+      setSelectedImages([]); // Clear selection
+      // Refresh images
+    } catch (error) {
+      console.error('Bulk favorite error:', error);
+    }
+  };
+
+  const handleShowFavorites = async () => {
+    if (!showFavoritesOnly) {
+      const favorites = await fetchFavorites(1, 12);
+      setImages(favorites.favoriteImages);
+      setPagination(favorites.pagination);
+    }
+    setShowFavoritesOnly(!showFavoritesOnly);
+  };
+
   return (
     <div>
-      <SearchInput onSearch={handleSearch} />
+      <div className="toolbar">
+        <SearchInput onSearch={handleSearch} />
+        
+        <button 
+          onClick={handleShowFavorites}
+          className={showFavoritesOnly ? 'active' : ''}
+        >
+          {showFavoritesOnly ? '📷 Tất cả ảnh' : '❤️ Ảnh yêu thích'}
+        </button>
+        
+        {selectedImages.length > 0 && (
+          <div className="bulk-actions">
+            <button onClick={() => handleBulkFavorite('add')}>
+              ❤️ Thêm vào yêu thích ({selectedImages.length})
+            </button>
+            <button onClick={() => handleBulkFavorite('remove')}>
+              💔 Xóa khỏi yêu thích ({selectedImages.length})
+            </button>
+          </div>
+        )}
+      </div>
       
       {loading ? (
         <div>Loading...</div>
       ) : (
         <>
-          <ImageGrid images={images} />
+          <ImageGrid 
+            images={images}
+            selectedImages={selectedImages}
+            onImageSelect={setSelectedImages}
+            onToggleFavorite={handleToggleFavorite}
+            showFavoriteButton={true}
+          />
           
           <Pagination
             currentPage={pagination.currentPage}
@@ -414,6 +644,50 @@ const Gallery = () => {
           </div>
         </>
       )}
+    </div>
+  );
+};
+
+// ImageGrid component với favorite functionality
+const ImageGrid = ({ images, selectedImages, onImageSelect, onToggleFavorite, showFavoriteButton }) => {
+  const handleImageSelection = (imageId) => {
+    const newSelection = selectedImages.includes(imageId)
+      ? selectedImages.filter(id => id !== imageId)
+      : [...selectedImages, imageId];
+    onImageSelect(newSelection);
+  };
+
+  return (
+    <div className="image-grid">
+      {images.map(image => (
+        <div key={image.id} className="image-card">
+          <img src={image.secureUrl} alt={image.caption} />
+          
+          <div className="image-overlay">
+            <input
+              type="checkbox"
+              checked={selectedImages.includes(image.id)}
+              onChange={() => handleImageSelection(image.id)}
+            />
+            
+            {showFavoriteButton && (
+              <button
+                onClick={() => onToggleFavorite(image.id)}
+                className={`favorite-btn ${image.isLove ? 'loved' : ''}`}
+              >
+                {image.isLove ? '❤️' : '🤍'}
+              </button>
+            )}
+          </div>
+          
+          <div className="image-info">
+            <p>{image.caption}</p>
+            <span className="tags">
+              {image.tags?.map(tag => `#${tag}`).join(' ')}
+            </span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
@@ -478,6 +752,7 @@ photo_gallery/
   img_tags: [String],       // Array of tags
   img_caption: String,      // Image description
   img_isPublic: Boolean,    // Public/Private
+  img_isLove: Boolean,      // Favorite status (default: false)
   createdAt: Date,
   updatedAt: Date
 }
@@ -620,6 +895,30 @@ curl -X GET "http://localhost:3002/api/gallery/image/?page=1&limit=200" \
 # 11. Test Edge Cases
 curl -X GET "http://localhost:3002/api/gallery/image/?page=0&limit=5" \
   -H "Authorization: Bearer YOUR_TOKEN"  # Page will default to 1
+
+# 12. Toggle Favorite Image
+curl -X POST "http://localhost:3002/api/gallery/image/123456/toggle-favorite" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 13. Get Favorite Images List
+curl -X GET "http://localhost:3002/api/gallery/image/favorites/list?page=1&limit=10" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# 14. Add Multiple Images to Favorites
+curl -X POST "http://localhost:3002/api/gallery/image/favorites/add-multiple" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"imageIds":[123456,789012,345678]}'
+
+# 15. Remove Multiple Images from Favorites
+curl -X POST "http://localhost:3002/api/gallery/image/favorites/remove-multiple" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"imageIds":[123456,789012]}'
+
+# 16. Test Favorite Validation Error
+curl -X POST "http://localhost:3002/api/gallery/image/invalid-id/toggle-favorite" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ### 📊 **Pagination Response Format**

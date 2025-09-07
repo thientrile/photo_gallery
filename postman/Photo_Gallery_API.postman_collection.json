@@ -1863,6 +1863,395 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Favorite Images",
+			"item": [
+				{
+					"name": "Toggle Favorite Image",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Toggle favorite successful\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('isFavorite');",
+									"    pm.expect(responseJson.metadata).to.have.property('image');",
+									"    console.log('Favorite status:', responseJson.metadata.isFavorite);",
+									"});",
+									"",
+									"pm.test(\"Image data includes favorite status\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata.image).to.have.property('isLove');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/{{test_image_id}}/toggle-favorite",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"{{test_image_id}}",
+								"toggle-favorite"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Favorite Images - First Page",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Favorite images structure correct\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('favoriteImages');",
+									"    pm.expect(responseJson.metadata).to.have.property('pagination');",
+									"    pm.expect(responseJson.metadata.favoriteImages).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Pagination info correct\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const pagination = responseJson.metadata.pagination;",
+									"    pm.expect(pagination.currentPage).to.equal(1);",
+									"    pm.expect(pagination.itemsPerPage).to.equal(5);",
+									"    console.log('Total favorites:', pagination.totalItems);",
+									"});",
+									"",
+									"pm.test(\"All returned images are favorites\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const favoriteImages = responseJson.metadata.favoriteImages;",
+									"    favoriteImages.forEach(image => {",
+									"        pm.expect(image.isLove).to.be.true;",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/favorites/list?page=1&limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"favorites",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Favorite Images - Default Pagination",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Default pagination works\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    const pagination = responseJson.metadata.pagination;",
+									"    pm.expect(pagination.currentPage).to.equal(1);",
+									"    pm.expect(pagination.itemsPerPage).to.equal(10); // Default limit",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/favorites/list",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"favorites",
+								"list"
+							]
+						}
+					}
+				},
+				{
+					"name": "Add Multiple Images to Favorites",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Bulk add to favorites successful\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('addedCount');",
+									"    pm.expect(responseJson.metadata).to.have.property('totalRequested');",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"    pm.expect(responseJson.metadata.images).to.be.an('array');",
+									"    console.log(`Added ${responseJson.metadata.addedCount} images to favorites`);",
+									"});",
+									"",
+									"pm.test(\"All added images are favorites\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    responseJson.metadata.images.forEach(image => {",
+									"        pm.expect(image.isLove).to.be.true;",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\\n    \\\"imageIds\\\": [{{test_image_id}}, {{test_image_id_2}}]\\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/favorites/add-multiple",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"favorites",
+								"add-multiple"
+							]
+						}
+					}
+				},
+				{
+					"name": "Remove Multiple Images from Favorites",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Bulk remove from favorites successful\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.metadata).to.have.property('removedCount');",
+									"    pm.expect(responseJson.metadata).to.have.property('totalRequested');",
+									"    pm.expect(responseJson.metadata).to.have.property('images');",
+									"    console.log(`Removed ${responseJson.metadata.removedCount} images from favorites`);",
+									"});",
+									"",
+									"pm.test(\"All removed images are not favorites\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    responseJson.metadata.images.forEach(image => {",
+									"        pm.expect(image.isLove).to.be.false;",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\\n    \\\"imageIds\\\": [{{test_image_id}}, {{test_image_id_2}}]\\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/favorites/remove-multiple",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"favorites",
+								"remove-multiple"
+							]
+						}
+					}
+				},
+				{
+					"name": "Favorite Images - Validation Error (Invalid ID)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Validation error message correct\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson.message).to.include('Image ID');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/invalid-id/toggle-favorite",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"invalid-id",
+								"toggle-favorite"
+							]
+						}
+					}
+				},
+				{
+					"name": "Bulk Favorites - Validation Error (Empty Array)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Validation error for empty array\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.include('At least one image ID');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\\n    \\\"imageIds\\\": []\\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gallery/image/favorites/add-multiple",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"image",
+								"favorites",
+								"add-multiple"
+							]
+						}
+					}
+				}
+			]
 		}
 	],
 	"event": [

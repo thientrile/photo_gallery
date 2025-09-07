@@ -61,6 +61,11 @@ const imageSchema = new Schema(
             default: false,
         },
 
+        img_isLove:{
+            type: Boolean,
+            default: false,
+        }
+
         // img_location: {
         //     lat: Number,
         //     lng: Number,
