@@ -128,11 +128,11 @@ const getImageById = async (imageId) => {
     }
     return omitInfoData({ fields: outputImages, object: removePrefixFromKeys(image, 'img_') });
 }
-const getAllImagesByUserId = async (userId, searchQuery = null, page = 1, limit = 10) => {
+const getAllImagesByUserId = async (userId, searchQuery = null, page = 1, limit = 100) => {
     try {
         // Validate pagination parameters
         const currentPage = Math.max(1, parseInt(page) || 1);
-        const itemsPerPage = Math.max(1, Math.min(100, parseInt(limit) || 10)); // Max 100 items per page
+        const itemsPerPage = Math.max(1, Math.min(100, parseInt(limit) || 100)); // Max 100 items per page
         const skip = (currentPage - 1) * itemsPerPage;
 
         // Base query - lấy ảnh của user
