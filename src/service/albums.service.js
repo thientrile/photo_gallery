@@ -157,10 +157,44 @@ const editAlbum = async (userId, albumId, payload) => {
     });
 };
 
+// Xóa album theo albumId và userId
+const deleteAlbumById = async (albumId, userId) => {
+    // Tìm album và kiểm tra quyền sở hữu
+    const album = await albumModel.findOne({
+        alb_id: albumId,
+        alb_userId: convertToObjectIdMongoose(userId)
+    });
+    
+    if (!album) {
+        throw new BadRequestError('Album không tồn tại hoặc bạn không có quyền xóa album này');
+    }
+
+    // Đếm số lượng ảnh trong album trước khi xóa
+    const imageCount = await ImageModel.countDocuments({ img_albumId: album._id });
+
+    // Xóa tham chiếu album khỏi tất cả ảnh (set img_albumId = null)
+    await ImageModel.updateMany(
+        { img_albumId: album._id },
+        { img_albumId: null }
+    );
+
+    // Xóa album khỏi database
+    await albumModel.deleteOne({ _id: album._id });
+
+    return { 
+        success: true, 
+        message: `Album "${album.alb_title}" đã được xóa thành công`,
+        details: {
+            albumId: albumId,
+            albumTitle: album.alb_title,
+            imagesUnlinked: imageCount
+        }
+    };
+};
 
 module.exports = {
     createNewAbums,
     getAllAlbumsOfUser,
     editAlbum,
-    // getAllImagesByAlbumId
+    deleteAlbumById
 };

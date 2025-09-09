@@ -788,6 +788,16 @@
 									"pm.test(\"Album deleted successfully\", function () {",
 									"    const responseJson = pm.response.json();",
 									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson).to.have.property('metadata');",
+									"    pm.expect(responseJson.metadata).to.have.property('albumId');",
+									"    pm.expect(responseJson.metadata).to.have.property('albumTitle');",
+									"    pm.expect(responseJson.metadata).to.have.property('imagesUnlinked');",
+									"    console.log('Deleted album:', responseJson.metadata.albumTitle);",
+									"    console.log('Images unlinked:', responseJson.metadata.imagesUnlinked);",
+									"});",
+									"",
+									"pm.test(\"Response time is reasonable\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);",
 									"});"
 								],
 								"type": "text/javascript"
@@ -812,6 +822,92 @@
 								"gallery",
 								"album",
 								"{{test_album_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Album - Not Found (404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Error message for non-existent album\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson.message).to.include('không tồn tại');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/999999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								"999999"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Album - Invalid ID (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 (Bad Request)\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Validation error for invalid album ID\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('message');",
+									"    pm.expect(responseJson.message).to.include('Album ID');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gallery/album/invalid-id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gallery",
+								"album",
+								"invalid-id"
 							]
 						}
 					}

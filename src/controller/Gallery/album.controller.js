@@ -1,4 +1,4 @@
-const { createNewAbums, editAlbum, getAllAlbumsOfUser } = require("../../service/albums.service");
+const { createNewAbums, editAlbum, getAllAlbumsOfUser, deleteAlbumById } = require("../../service/albums.service");
 const { SuccessResponse } = require("../../utils/handRespones/success.response");
 
 
@@ -35,9 +35,21 @@ const getAllAlbumsByUser = async (req, res) => {
     }).send(res);
 }
 
+const deleteAlbum = async (req, res) => {
+    const { albumId } = req.params;
+    const userId = req.decoded.userId;
+    
+    const result = await deleteAlbumById(albumId, userId);
+    
+    new SuccessResponse({
+        message: result.message,
+        metadata: result.details
+    }).send(res);
+}
 
 module.exports = {
     getAllAlbumsByUser,
     newAlbum,
-    editAlbumByUser
+    editAlbumByUser,
+    deleteAlbum
 };
