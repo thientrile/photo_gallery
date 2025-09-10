@@ -87,7 +87,8 @@ const getAllAlbumsOfUser = async (userId, page = 1, limit = 10) => {
                 cover_image: 1,
                 isPublic: "$alb_isPublic",
                 createdAt: 1,
-                updatedAt: 1
+                updatedAt: 1,
+                cover:"$alb_cover_image"
             }
         }
     ]);

@@ -1,8 +1,8 @@
 /** @format */
 'use strict';
-const config=require("../../../config.js")
+const config = require("../../../config.js")
 const mongoose = require('mongoose');
-const { schema, user, pass, host,  options } = config.mongodb;
+const { schema, user, pass, host, options } = config.mongodb;
 
 const encodedUser = encodeURIComponent(user);
 const encodedPass = encodeURIComponent(pass);
@@ -15,7 +15,7 @@ class DatabaseClass {
 
     async connect() {
         mongoose
-            .connect(mongoUri,options)
+            .connect(mongoUri, options)
             .then(() => {
                 console.log('✅ MongoDB Status: Connected');
                 console.log('🔗 MongoDB URI:', mongoUri.replace(/\/\/.*@/, '//*****@'));

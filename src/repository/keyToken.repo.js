@@ -2,7 +2,7 @@
 
 'use strict';
 
-const keyTokenModel = require('../model/keyToken.model');
+const keyTokenModel = require('../model/keytoken.model.js');
 const { converToUUIDMongoose } = require('../utils');
 
 const tk_findOne = async (filter) => {

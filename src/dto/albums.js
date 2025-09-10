@@ -1,7 +1,7 @@
 const Joi = require("joi")
 
 
-const outputAlbums = ['_id', '__v', "createdAt", "updatedAt", '_id', 'albumId']
+const outputAlbums = ['_id', '__v', "createdAt", "updatedAt", '_id']
 
 
 const inputCreateAlbums = Joi.object({

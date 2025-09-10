@@ -1,5 +1,5 @@
 const { createToken } = require("../utils/jsonwebtoken/utils");
-const keyModel = require("../model/keyToken.model");
+const keyModel = require("../model/keytoken.model.js");
 
 const createKey= async(userId)=>{
     const newKey = await keyModel.create({tk_userId: userId });
